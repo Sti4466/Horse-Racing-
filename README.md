@@ -1,1 +1,1 @@
-horse racing Predictor working in top 3 rather than the winning hors
+horse racing Predictor working on top 3 rather than the winning hors
