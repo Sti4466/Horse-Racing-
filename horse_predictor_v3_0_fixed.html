@@ -2088,7 +2088,7 @@ trifecta = (race.placegetters[1].number === race.modelScoreOrder[2].number);
 }
 }
 if (!app.factorStats) {
-app.factorStats = { total: 0, oddsSuccess: 0, formSuccess: 0, trackSuccess: 0, jockeySuccess: 0, trainerSuccess: 0, freshnessSuccess: 0, consistencySuccess: 0, tacticalSuccess: 0, trackCondSuccess: 0, firstUpSuccess: 0, distanceSuccess: 0, lastMarginSuccess: 0, gearSuccess: 0, railSuccess: 0, paceSuccess: 0, classSuccess: 0, momentumSuccess: 0, finStrSuccess: 0, sectionalSuccess: 0, weatherRailSuccess: 0, oddsFail: 0, formFail: 0, trackFail: 0, jockeyFail: 0, trainerFail: 0, freshnessFail: 0, consistencyFail: 0, tacticalFail: 0, trackCondFail: 0, firstUpFail: 0, distanceFail: 0, lastMarginFail: 0, gearFail: 0, railFail: 0, paceFail: 0, classFail: 0, momentumFail: 0, finStrFail: 0, sectionalFail: 0, weatherRailFail: 0 };
+app.factorStats = { total: 0, oddsSuccess: 0, formSuccess: 0, trackSuccess: 0, jockeySuccess: 0, trainerSuccess: 0, freshnessSuccess: 0, consistencySuccess: 0, tacticalSuccess: 0, trackCondSuccess: 0, firstUpSuccess: 0, distanceSuccess: 0, lastMarginSuccess: 0, gearSuccess: 0, railSuccess: 0, paceSuccess: 0, classSuccess: 0, momentumSuccess: 0, finStrSuccess: 0, sectionalSuccess: 0, weatherRailSuccess: 0, careerSuccess: 0, trackDistSuccess: 0, ratingSuccess: 0, oddsFail: 0, formFail: 0, trackFail: 0, jockeyFail: 0, trainerFail: 0, freshnessFail: 0, consistencyFail: 0, tacticalFail: 0, trackCondFail: 0, firstUpFail: 0, distanceFail: 0, lastMarginFail: 0, gearFail: 0, railFail: 0, paceFail: 0, classFail: 0, momentumFail: 0, finStrFail: 0, sectionalFail: 0, weatherRailFail: 0, careerFail: 0, trackDistFail: 0, ratingFail: 0 };
 }
 app.factorStats.total++;
 if (race.factors) {
@@ -8706,12 +8706,14 @@ consistencySuccess: 0, tacticalSuccess: 0, trackCondSuccess: 0,
 firstUpSuccess: 0, distanceSuccess: 0, lastMarginSuccess: 0,
 gearSuccess: 0, railSuccess: 0, paceSuccess: 0, classSuccess: 0,
 momentumSuccess: 0, finStrSuccess: 0, sectionalSuccess: 0, weatherRailSuccess: 0,
+careerSuccess: 0, trackDistSuccess: 0, ratingSuccess: 0,
 oddsFail: 0, formFail: 0, trackFail: 0, jockeyFail: 0,
 trainerFail: 0, freshnessFail: 0, consistencyFail: 0,
 tacticalFail: 0, trackCondFail: 0, firstUpFail: 0,
 distanceFail: 0, lastMarginFail: 0, gearFail: 0, railFail: 0,
 paceFail: 0, classFail: 0, momentumFail: 0, finStrFail: 0,
-sectionalFail: 0, weatherRailFail: 0
+sectionalFail: 0, weatherRailFail: 0,
+careerFail: 0, trackDistFail: 0, ratingFail: 0
 };
 // Point app.W to whichever model is active
 if (app.activeModel === 'custom') app.W = app.customWeights;
@@ -8853,12 +8855,14 @@ consistencySuccess: 0, tacticalSuccess: 0, trackCondSuccess: 0,
 firstUpSuccess: 0, distanceSuccess: 0, lastMarginSuccess: 0,
 gearSuccess: 0, railSuccess: 0, paceSuccess: 0, classSuccess: 0,
 momentumSuccess: 0, finStrSuccess: 0, sectionalSuccess: 0, weatherRailSuccess: 0,
+careerSuccess: 0, trackDistSuccess: 0, ratingSuccess: 0,
 oddsFail: 0, formFail: 0, trackFail: 0, jockeyFail: 0,
 trainerFail: 0, freshnessFail: 0, consistencyFail: 0,
 tacticalFail: 0, trackCondFail: 0, firstUpFail: 0,
 distanceFail: 0, lastMarginFail: 0, gearFail: 0, railFail: 0,
 paceFail: 0, classFail: 0, momentumFail: 0, finStrFail: 0,
-sectionalFail: 0, weatherRailFail: 0
+sectionalFail: 0, weatherRailFail: 0,
+careerFail: 0, trackDistFail: 0, ratingFail: 0
 };
 saveData();
 showSuccess('Factor stats reset! Percentages will rebuild as you record new races.');
@@ -8917,12 +8921,14 @@ firstUpSuccess: 0, distanceSuccess: 0, lastMarginSuccess: 0,
 gearSuccess: 0, railSuccess: 0, paceSuccess: 0, classSuccess: 0,
 momentumSuccess: 0, finStrSuccess: 0, sectionalSuccess: 0,
 weatherRailSuccess: 0,
+careerSuccess: 0, trackDistSuccess: 0, ratingSuccess: 0,
 oddsFail: 0, formFail: 0, trackFail: 0, jockeyFail: 0,
 trainerFail: 0, freshnessFail: 0, consistencyFail: 0,
 tacticalFail: 0, trackCondFail: 0, firstUpFail: 0,
 distanceFail: 0, lastMarginFail: 0, gearFail: 0, railFail: 0,
 paceFail: 0, classFail: 0, momentumFail: 0, finStrFail: 0,
-sectionalFail: 0, weatherRailFail: 0
+sectionalFail: 0, weatherRailFail: 0,
+careerFail: 0, trackDistFail: 0, ratingFail: 0
 };
 app.jockeyStats = {};
 app.trainerStats = {};
@@ -9080,6 +9086,45 @@ for (var rli = 0; rli < factorWeightMap.length; rli++) {
   var hitStr = hitRate >= 0 ? hitRate + '% (' + succ + '/' + total2 + ')' : 'n/a';
   var chgStr = (pctChg >= 0 ? '+' : '') + pctChg + '% ' + arrow;
   rptLines.push(verdict + ' ' + fm.label.padEnd(14) + ' ' + String(oldW).padStart(4) + ' ' + String(newW).padStart(4) + '  ' + chgStr.padEnd(8) + ' ' + hitStr);
+}
+rptLines.push('');
+// ── Progressive Top-3 Trend ─────────────────────────────────────────────────
+rptLines.push('--- PROGRESSIVE TOP-3 TREND ---');
+var TREND_BLOCKS = 6;
+var TREND_ICON_THRESHOLD = 0.2;
+var TREND_MSG_THRESHOLD  = 0.2;
+var trendBlockSize = Math.max(5, Math.floor(app.raceHistory.length / TREND_BLOCKS));
+var trendValues = [];
+for (var ti = 0; ti < app.raceHistory.length; ti += trendBlockSize) {
+  var tBlock = app.raceHistory.slice(ti, ti + trendBlockSize);
+  if (tBlock.length < 3) break; // skip tiny trailing blocks
+  var tHitsSum = 0;
+  for (var tbi = 0; tbi < tBlock.length; tbi++) tHitsSum += (tBlock[tbi].top3Hits || 0);
+  var tAvg = (tHitsSum / tBlock.length);
+  trendValues.push(tAvg);
+  var tWins = 0, tAll3 = 0;
+  for (var tbi2 = 0; tbi2 < tBlock.length; tbi2++) {
+    if (tBlock[tbi2].correct) tWins++;
+    if ((tBlock[tbi2].top3Hits || 0) >= 3) tAll3++;
+  }
+  rptLines.push('  Races ' + (ti + 1) + '-' + Math.min(ti + trendBlockSize, app.raceHistory.length) + ':  avg ' + tAvg.toFixed(1) + '/3 hits  wins=' + tWins + '  all-3=' + tAll3);
+}
+if (trendValues.length >= 2) {
+  var tHalfIdx = Math.ceil(trendValues.length / 2);
+  var tFirstHalf  = trendValues.slice(0, tHalfIdx);
+  var tSecondHalf = trendValues.slice(tHalfIdx);
+  var tFirst  = tFirstHalf.reduce(function(a, b)  { return a + b; }, 0) / tFirstHalf.length;
+  var tSecond = tSecondHalf.reduce(function(a, b) { return a + b; }, 0) / tSecondHalf.length;
+  var tDiff = tSecond - tFirst;
+  var tTrendIcon = tDiff > TREND_ICON_THRESHOLD ? '\ud83d\udcc8' : tDiff < -TREND_ICON_THRESHOLD ? '\ud83d\udcc9' : '\u27a1';
+  rptLines.push('  Overall trend: ' + tTrendIcon + ' ' + (tDiff >= 0 ? '+' : '') + tDiff.toFixed(2) + ' avg hits/race (2nd half vs 1st half)');
+  if (tDiff < -TREND_MSG_THRESHOLD) {
+    rptLines.push('  \u26a0 Top-3 rate is declining — check recent race data quality or try Reset + Relearn.');
+  } else if (tDiff > TREND_MSG_THRESHOLD) {
+    rptLines.push('  \u2705 Top-3 rate is improving — Base is learning in the right direction.');
+  } else {
+    rptLines.push('  \u2139 Top-3 rate is roughly stable across history.');
+  }
 }
 rptLines.push('');
 rptLines.push('--- VERDICT ---');
