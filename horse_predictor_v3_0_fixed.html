@@ -10085,10 +10085,9 @@ app.loadPending = function(id) {
   document.getElementById('allModelPicksPanel').style.display = 'block';
   document.getElementById('singleModelSave').style.display = 'none';
   document.getElementById('raceInfo').classList.remove('hidden');
-  document.getElementById('betSection').classList.remove('hidden');
+  document.getElementById('betSection').classList.add('hidden');
 
   if (typeof app.renderAllModelPicks === 'function') app.renderAllModelPicks();
-  if (typeof renderLiveBetPanel === 'function') renderLiveBetPanel();
 
   app.activeBets = [];
   renderActiveBets();
@@ -10248,7 +10247,20 @@ app.recordAndRerun = function() {
   if (bettingPanel) bettingPanel.classList.remove('hidden');
   if (typeof renderBettingStats === 'function') renderBettingStats();
   if (typeof renderActiveBets === 'function') renderActiveBets();
-  if (typeof renderConsensusAdvisor === 'function') renderConsensusAdvisor();
+
+  // Re-run: re-score horses with the freshly updated weights and display new predictions
+  if (app.horses && app.horses.length > 0) {
+    scoreHorses(app.horses);
+    renderRaceInfoPanel();
+    renderCards(null);
+    document.getElementById('predictions').classList.remove('hidden');
+    document.getElementById('raceInfo').classList.remove('hidden');
+    document.getElementById('betSection').classList.remove('hidden');
+    if (typeof renderLiveBetPanel === 'function') renderLiveBetPanel();
+    if (typeof renderConsensusAdvisor === 'function') renderConsensusAdvisor();
+    document.getElementById('predictions').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    showSuccess('Weights updated — fresh prediction shown below!');
+  }
 };
 
 var speedMap = {};
