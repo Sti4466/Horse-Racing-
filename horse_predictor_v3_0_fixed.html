@@ -12,7 +12,7 @@
 </head>
 <body>
 <h1>🏇 Horse Race Predictor <span class="version-badge">v3.0</span></h1>
-<p class="subtitle">24-factor ML . Top-3 Optimized (70/30) . Post-Mortem Learning . Order-agnostic placement</p>
+<p class="subtitle">26-factor ML · Top-3 Optimized (70/30) · Post-Mortem Learning · Grok Top-2 · Kimi/GPT Top-3 any order · Base learns from all</p>
 <div class="card" style="border:2px solid var(--accent-purple); background:rgba(168,85,247,0.05); margin-bottom:16px;">
 <h3 style="font-size:18px; margin-bottom:4px; font-weight:700; color:var(--accent-purple);">🤖 AI Predictor Battle</h3>
 <p style="color:var(--text-muted); font-size:12px; margin-bottom:12px;">🎰 Trifecta Box · 🎯 Quinella · Win is a bonus · 5/10 = profitable</p>
@@ -652,6 +652,8 @@ secondUpForm: 30,
 jockeyForm: 35,
 trainerForm: 25,
 marginLearning: 1.0,
+raceOrder: 25,
+barrierOrder: 20,
 top3Weight: 0.70,
 winWeight: 0.30
 },
@@ -691,7 +693,9 @@ weightSafeRanges: {
   formMomentum:  [5,     150,   100],
   finishStrength:[2,     130,   90],
   sectionalSpeed:[5,     120,   80],
-  weatherRailBias:[2,    130,   90]
+  weatherRailBias:[2,    130,   90],
+  raceOrder:     [2,     100,   60],
+  barrierOrder:  [2,     80,    50]
 },
 sanitizeWeights: function(w) {
   if (!w) return w;
@@ -863,6 +867,8 @@ if (!app.baseWeights.weatherRailBias) app.baseWeights.weatherRailBias = app.defa
 if (!app.baseWeights.secondUpForm) app.baseWeights.secondUpForm = app.defaultWeights.secondUpForm;
 if (!app.baseWeights.jockeyForm)   app.baseWeights.jockeyForm   = app.defaultWeights.jockeyForm;
 if (!app.baseWeights.trainerForm)  app.baseWeights.trainerForm  = app.defaultWeights.trainerForm;
+if (!app.baseWeights.raceOrder)    app.baseWeights.raceOrder    = app.defaultWeights.raceOrder;
+if (!app.baseWeights.barrierOrder) app.baseWeights.barrierOrder = app.defaultWeights.barrierOrder;
 // Ensure custom3 (GPT Place Specialist) has its philosophy if loading old save
 // ── Learning objective guards — ensure saved weights carry correct objective ──
 // custom (Kimi): Form-First, top3 objective
@@ -1406,6 +1412,7 @@ trackDist: 'Track/Dist', trackCond: 'Track Cond', firstUp: '1st Up', distance: '
 lastMargin: 'Last Margin', gear: 'Gear', rail: 'Rail', weight: 'Weight', stats: 'Stats',
 pace: 'Pace', classChg: 'Class', momentum: 'Momentum',
 finStr: 'Finish Strength', sectional: 'Sectional', weatherRail: 'Weather/Rail',
+raceOrder: 'Race Order', barrierOrder: 'Barrier Order',
 top3Placement: 'Top-3 Placement', winScore: 'Win Potential' };
 var displayName = nameMap[factor.name] || factor.name.charAt(0).toUpperCase() + factor.name.slice(1);
 var label = document.createElement('div');
@@ -1701,6 +1708,8 @@ finishStrength: [5, 90],
 sectionalSpeed: [10, 80],
 weatherRailBias: [5, 90],
 marginLearning: [0.5, 2.0],
+raceOrder: [2, 100],
+barrierOrder: [2, 80],
 top3Weight: [0.4, 0.9],
 winWeight: [0.1, 0.6]
 };
@@ -3564,6 +3573,8 @@ if (speedMapHorse.lateSpeed > 0)   mergedHorse.lateSpeed   = speedMapHorse.lateS
 if (speedMapHorse.avgSpeed > 0)    mergedHorse.avgSpeed    = speedMapHorse.avgSpeed;
 if (speedMapHorse.lastFinishPos > 0) mergedHorse.fsLastFinishPos = speedMapHorse.lastFinishPos;
 if (speedMapHorse.lastFieldSize > 0) mergedHorse.fsLastFieldSize = speedMapHorse.lastFieldSize;
+if (speedMapHorse.raceNum > 0)     mergedHorse.raceNum     = speedMapHorse.raceNum;
+if (speedMapHorse.barrierRank > 0) mergedHorse.barrierRank = speedMapHorse.barrierRank;
 }
 // Derive runningStyle from settlingPosition if not set by SpeedMap JSON
 if (!mergedHorse.runningStyle && mergedHorse.settlingPosition > 0) {
@@ -5264,6 +5275,36 @@ bonus += (favRate / 100) * 15;
 h.statisticalBonus = Math.round(bonus * 10) / 10;
 return bonus;
 }
+// Race Order score — raceNum=1 means top of race-order view (fastest expected early)
+// Lower rank → more likely to run near front → positive modifier
+function calculateRaceOrderScore(h, fieldSize) {
+  var rank = h.raceNum || 0;
+  if (rank <= 0) return 0;
+  var W = app.W || {};
+  var raceOrderW = W.raceOrder || 25;
+  var fs = fieldSize || 10;
+  // Top-ranked horses get a bonus; bottom-ranked get a penalty
+  // rank 1 = best (+1.0x), rank fs = worst (-0.5x)
+  var relativeRank = (fs - rank) / Math.max(fs - 1, 1); // 1.0 for rank 1, 0.0 for rank fs
+  var score = (relativeRank - 0.4) * raceOrderW; // positive for top 60% of field by race order rank
+  h.raceOrderScore = Math.round(score * 10) / 10;
+  return score;
+}
+
+// Barrier Order score — barrierRank=1 means most favoured barrier draw
+// Lower barrierRank → more advantageous starting position
+function calculateBarrierOrderScore(h, fieldSize) {
+  var rank = h.barrierRank || 0;
+  if (rank <= 0) return 0;
+  var W = app.W || {};
+  var barrierOrderW = W.barrierOrder || 20;
+  var fs = fieldSize || 10;
+  var relativeRank = (fs - rank) / Math.max(fs - 1, 1); // 1.0 for rank 1, 0.0 for rank fs
+  var score = (relativeRank - 0.3) * barrierOrderW; // positive for top 70% of field by barrier rank
+  h.barrierOrderScore = Math.round(score * 10) / 10;
+  return score;
+}
+
 function calculateTop3PlacementScore(h, allHorses, fieldSize) {
 var score = 0;
 if (h.consistencyScore !== undefined && h.consistencyScore !== null) {
@@ -5379,6 +5420,9 @@ var biasAdj = getBiasAdjustment(h, app.raceInfo.track);
 if (biasAdj !== 0) { wrbScore += biasAdj; h.trackBiasAdjustment = biasAdj; }
 s += wrbScore; h.factorContributions.weatherRail = wrbScore;
 s += (1 - (parseInt(h.barrier) || 0) / 100) * 0.01;
+// Race Order and Barrier Order from SpeedMap sort views
+if (h.raceNum > 0) { var raceOrdScore = calculateRaceOrderScore(h, fieldSize); s += raceOrdScore; h.factorContributions.raceOrder = raceOrdScore; }
+if (h.barrierRank > 0) { var barrOrdScore = calculateBarrierOrderScore(h, fieldSize); s += barrOrdScore; h.factorContributions.barrierOrder = barrOrdScore; }
 h.winScore = Math.max(0, s);
 h.factorContributions.winScore = h.winScore;
 }
@@ -5429,7 +5473,9 @@ function renderLiveBetPanel() {
     var tf = JSON.parse(JSON.stringify(horses));
     app.W = m.weights;
     scoreHorses(tf);
-    modelPicks[m.key] = tf.slice(0, 3);
+    // Grok is a Top-2 Hunter — only returns 2 picks
+    var maxPicks = m.key === 'custom2' ? 2 : 3;
+    modelPicks[m.key] = tf.slice(0, maxPicks);
   });
   app.W = prevW;
 
@@ -5618,20 +5664,22 @@ app.recordAllModels = function() {
     var field     = m.field;
     var predicted1 = m.top3[0];
     var predicted2 = m.top3[1];
-    var predicted3 = m.top3[2];
+    // Grok (custom2) is a Top-2 Hunter — only evaluates against its 2 picks
+    var isGrok     = m.key === 'custom2';
+    var predicted3 = isGrok ? null : m.top3[2];
     if (!predicted1) return;
 
     var isCorrect  = actual1.name === predicted1.name;
     var pNames2    = [predicted1.name, predicted2 ? predicted2.name : ''];
-    var pNames3    = [predicted1.name, predicted2 ? predicted2.name : '', predicted3 ? predicted3.name : ''];
+    var pNames3    = isGrok ? pNames2 : [predicted1.name, predicted2 ? predicted2.name : '', predicted3 ? predicted3.name : ''];
     var aNames2    = [actual1.name, actual2 ? actual2.name : ''].filter(Boolean);
-    var aNames3    = [actual1.name, actual2 ? actual2.name : '', actual3 ? actual3.name : ''].filter(Boolean);
+    var aNames3    = isGrok ? aNames2 : [actual1.name, actual2 ? actual2.name : '', actual3 ? actual3.name : ''].filter(Boolean);
     var top2Any    = aNames2.length >= 1 && aNames2.every(function(n){ return pNames2.indexOf(n) !== -1; });
     // top3Any: all provided actuals appear somewhere in predicted top-3 (order-agnostic)
-    // Works correctly even when only 1 or 2 actual places are recorded
-    var top3Any    = aNames3.length >= 2 && aNames3.every(function(n){ return pNames3.indexOf(n) !== -1; });
+    // For Grok (top-2 hunter) top3Any is the same as top2Any
+    var top3Any    = isGrok ? top2Any : (aNames3.length >= 2 && aNames3.every(function(n){ return pNames3.indexOf(n) !== -1; }));
 
-    // Count hits
+    // Count hits (Grok counts against its 2 picks only)
     var hits = 0;
     aNames3.forEach(function(n){ if (n && pNames3.indexOf(n) !== -1) hits++; });
     app._lastTop3Hits = hits;
@@ -5710,10 +5758,64 @@ app.recordAllModels = function() {
     }
 
     summaries.push({ model: m.key, name: m.name, color: m.color,
-                     correct: isCorrect, hits: hits, top3Any: !!top3Any, predicted: predicted1.name });
-    addLog('result', (isCorrect?'✅':'❌') + ' ' + m.name + ': ' + hits + '/3 — ' + predicted1.name,
+                     correct: isCorrect, hits: hits, top3Any: !!top3Any, predicted: predicted1.name,
+                     maxPicks: isGrok ? 2 : 3 });
+    var maxPicksLabel = isGrok ? '2' : '3';
+    addLog('result', (isCorrect?'✅':'❌') + ' ' + m.name + ': ' + hits + '/' + maxPicksLabel + ' — ' + predicted1.name,
       'Actual: ' + name1 + (name2?'/'+name2:'') + (name3?'/'+name3:''));
   });
+
+  // ── Base learns from all-model consensus ─────────────────────────────────
+  // Collect all horses predicted by ALL specialist models (Kimi, Grok, GPT)
+  // Horses that appear in 2+ models get an extra reinforcement in Base weights
+  var specialistModels = ['custom', 'custom2', 'custom3'];
+  var consensusCount = {};
+  app._raceModelResults.forEach(function(m) {
+    if (specialistModels.indexOf(m.key) === -1) return;
+    m.top3.forEach(function(h) {
+      consensusCount[h.name] = (consensusCount[h.name] || 0) + 1;
+    });
+  });
+  var baseResult2 = app._raceModelResults.filter(function(m){ return m.key === 'base'; })[0];
+  if (baseResult2) {
+    var baseField = baseResult2.field;
+    var actuals3Names = [name1, name2, name3].filter(Boolean);
+    // Reinforce base weights for horses that all 3 specialists agreed on AND were actual placers
+    Object.keys(consensusCount).forEach(function(horseName) {
+      if (consensusCount[horseName] < 2) return; // skip unless at least 2 specialist models agree
+      var horseObj = baseField.filter(function(h){ return h.name === horseName; })[0];
+      if (!horseObj || !horseObj.factorContributions) return;
+      var wasActual = actuals3Names.indexOf(horseName) !== -1;
+      var isConsensus3 = consensusCount[horseName] >= 3;
+      var prevW = app.W;
+      app.W = app.baseWeights;
+      var fc = horseObj.factorContributions;
+      // Boost rates: consensus-3 actual = strong reinforce; consensus-2 actual = moderate reinforce
+      // consensus miss = small penalty to discourage over-reliance on group-think
+      var BOOST_C3_HIT = 0.006;  // all 3 specialists agreed AND horse placed
+      var BOOST_C2_HIT = 0.004;  // 2 specialists agreed AND horse placed
+      var PENALTY_C3   = -0.003; // all 3 agreed but horse missed
+      var PENALTY_C2   = -0.002; // 2 agreed but horse missed
+      var boostRate = isConsensus3 ? (wasActual ? BOOST_C3_HIT : PENALTY_C3) : (wasActual ? BOOST_C2_HIT : PENALTY_C2);
+      // Apply micro-adjustments to base on consensus agreement / disagreement
+      // Use weightSafeRanges for bounds consistency
+      var wsr = app.weightSafeRanges || {};
+      function adjBase(key, fcKey) {
+        var r = wsr[key];
+        if (!r) return;
+        if ((fc[fcKey] || 0) > 0) app.baseWeights[key] = Math.min(r[1], Math.max(r[0], app.baseWeights[key] * (1 + boostRate)));
+      }
+      adjBase('form1',         'form');
+      adjBase('pacePressure',  'pace');
+      adjBase('odds',          'odds');
+      adjBase('finishStrength','finStr');
+      adjBase('formMomentum',  'momentum');
+      adjBase('sectionalSpeed','sectional');
+      adjBase('raceOrder',     'raceOrder');
+      adjBase('barrierOrder',  'barrierOrder');
+      app.W = prevW;
+    });
+  }
 
   saveData(); updateStats(); app.updateModelMetrics();
   app.winnerSet = true;
@@ -5735,8 +5837,9 @@ app.recordAllModels = function() {
   summaries.forEach(function(s) {
     var cell = document.createElement('div');
     cell.style.cssText = 'background:rgba(15,23,42,0.5); border:1px solid ' + (s.correct?'#10b981':s.hits>=2?'#f59e0b':'#1e2740') + '; border-radius:8px; padding:8px; text-align:center;';
+    var mp = s.maxPicks || 3;
     cell.innerHTML = '<div style="color:' + s.color + '; font-size:10px; font-weight:700; margin-bottom:3px;">' + s.name + '</div>' +
-      '<div style="font-size:20px; font-weight:800; color:' + (s.hits>=2?'#10b981':s.hits===1?'#f59e0b':'#ef4444') + ';">' + s.hits + '/3</div>' +
+      '<div style="font-size:20px; font-weight:800; color:' + (s.hits>=2?'#10b981':s.hits===1?'#f59e0b':'#ef4444') + ';">' + s.hits + '/' + mp + '</div>' +
       '<div style="font-size:10px; color:#475569;">' + (s.correct?'✅ Win':s.hits>=2?'🎯 Frame':'❌') + '</div>';
     tbl.appendChild(cell);
   });
@@ -9519,12 +9622,16 @@ app.renderAllModelPicks = function() {
     app.W = m.weights;
     scoreHorses(tf);
     app.W = prevW;
-    var top3 = tf.slice(0, 3);
-    app._raceModelResults.push({ key: m.key, name: m.label, color: m.color, field: tf, top3: top3 });
+    // Grok (custom2) is a Top-2 Hunter — only picks 2 horses
+    var maxPicks = m.key === 'custom2' ? 2 : 3;
+    var top3 = tf.slice(0, maxPicks);
+    app._raceModelResults.push({ key: m.key, name: m.label, color: m.color, field: tf, top3: top3, maxPicks: maxPicks });
+    var pickColors = ['#10b981','#3b82f6','#a855f7'];
     html += '<div style="display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border);">' +
       '<span style="font-size:12px; font-weight:700; color:' + m.color + '; min-width:80px;">' + escapeHtml(m.label) + '</span>' +
       '<span style="font-size:13px; color:var(--text-primary);">' +
-        top3.map(function(h, i){ return '<span style="color:' + ['#10b981','#3b82f6','#a855f7'][i] + ';">' + escapeHtml(h.name) + '</span>'; }).join(' · ') +
+        top3.map(function(h, i){ return '<span style="color:' + pickColors[i] + ';">' + escapeHtml(h.name) + '</span>'; }).join(' · ') +
+        (m.key === 'custom2' ? ' <span style="font-size:10px; color:#f59e0b; opacity:0.7;">(Top-2 only)</span>' : '') +
       '</span>' +
     '</div>';
   });
