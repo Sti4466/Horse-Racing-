@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Horse Race Predictor v3.0 - Post-Mortem Analysis</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<h1>🏇 Horse Race Predictor <span class="version-badge">v3.0</span></h1>
+<p class="subtitle">26-factor ML · Top-3 Optimized (70/30) · Post-Mortem Learning · Grok Top-2 · Kimi/GPT Top-3 any order · Base learns from all</p>
+<div class="card" style="border:2px solid var(--accent-purple); background:rgba(168,85,247,0.05); margin-bottom:16px;">
+<h3 style="font-size:18px; margin-bottom:4px; font-weight:700; color:var(--accent-purple);">🤖 AI Predictor Battle</h3>
+<p style="color:var(--text-muted); font-size:12px; margin-bottom:12px;">🎰 Trifecta Box · 🎯 Quinella · Win is a bonus · 5/10 = profitable</p>
+<div style="display:flex; gap:8px; margin-bottom:8px;">
+<button id="baseModelBtn" class="btn" style="flex:1; margin-top:0; background:linear-gradient(135deg,#059669,#10b981);" onclick="app.switchModel('base')">
+            🧠 BasePredictor<br><span style="font-size:11px; opacity:0.8;">Self-Learning AI</span>
+</button>
+<button id="customModelBtn" class="btn" style="flex:1; margin-top:0; background:linear-gradient(135deg,#7c3aed,#a855f7);" onclick="app.switchModel('custom')">
+            <span id="customModelBtnLabel">🔵 Kimi</span><br><span style="font-size:11px; opacity:0.8;">Custom Weights</span>
+</button>
+</div>
+<div style="display:flex; gap:8px; margin-bottom:8px;">
+<button id="custom2ModelBtn" class="btn" style="flex:1; margin-top:0; background:linear-gradient(135deg,#b45309,#f59e0b); color:#000;" onclick="app.switchModel('custom2')">
+            <span id="custom2ModelBtnLabel">⚡ Grok</span><br><span style="font-size:11px; opacity:0.8;">Top-2 Hunter</span>
+</button>
+<button id="custom3ModelBtn" class="btn" style="flex:1; margin-top:0; background:linear-gradient(135deg,#0e7490,#06b6d4);" onclick="app.switchModel('custom3')">
+            <span id="custom3ModelBtnLabel">🎯 GPT</span><br><span style="font-size:11px; opacity:0.8;">Place Finder</span>
+</button>
+</div>
+<div style="display:flex; gap:8px; margin-bottom:12px;">
+<button id="saturdayModelBtn" class="btn" style="flex:1; margin-top:0; background:linear-gradient(135deg,#7f1d1d,#b91c1c); border:1px solid #fca5a5; position:relative;" onclick="app.switchModel('saturday')">
+    🐴 Saturday<br><span style="font-size:11px; opacity:0.8;">Sat. Learning</span>
+</button>
+</div>
+<div id="modelStatus" style="padding:10px; background:rgba(16,185,129,0.1); border:1px solid var(--accent-green); border-radius:8px; margin-bottom:8px;">
+<p style="color:var(--accent-green); font-size:13px; font-weight:600;">🧠 Active: BasePredictor (Self-Learning AI)</p>
+</div>
+<button id="editCustomBtn" class="btn hidden" style="background:linear-gradient(135deg,#f59e0b,#fbbf24); color:#000; width:100%; margin-top:0;" onclick="app.showCustomEditor()">
+        ✏ Edit Weights
+    </button>
+<div id="modelMetrics" style="margin-top:12px; padding:10px; background:rgba(59,130,246,0.05); border:1px solid var(--border); border-radius:8px; display:none;">
+<h4 style="font-size:14px; font-weight:700; margin-bottom:10px; color:var(--accent-gold);">🏆 AI Leaderboard -- Top-3 Race to 70%</h4>
+<div id="leaderboardRows"></div>
+<div style="margin-top:8px; padding-top:8px; border-top:1px solid var(--border); font-size:11px; color:var(--text-muted);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
+<span>Target: <span style="color:#a855f7; font-weight:700;">70% Trifecta Box</span></span>
+<span style="color:#94a3b8; font-size:10px;">$6 box · 5/10 = +$190 profit · 50% hit rate</span>
+</div>
+</div>
+</div>
+</div>
+<div id="toast" class="toast" role="alert"></div>
+<div id="statsBar" class="stats-bar hidden">
+<div class="stat-box" style="border-color:#a855f7;"><div class="big" id="sTop3" style="color:#a855f7;">0%</div><div class="small">Trifecta Box</div></div>
+<div class="stat-box" style="border-color:#3b82f6;"><div class="big" id="sTop2" style="color:#3b82f6;">0%</div><div class="small">Quinella</div></div>
+<div class="stat-box"><div class="big" id="sTotal">0</div><div class="small">Total</div></div>
+<div class="stat-box yellow"><div class="big" id="sPct">0%</div><div class="small">Win%</div></div>
+<div class="stat-box green"><div class="big" id="sCorrect">0</div><div class="small">Wins</div></div>
+<div class="stat-box orange"><div class="big" id="sPending">0</div><div class="small">Pending</div></div>
+<div class="stat-box" style="border-color:#10b981;"><div class="big" id="sDayPnL" style="color:#10b981; font-size:14px;">$0</div><div class="small">Day P&L</div></div>
+</div>
+<div class="card" style="border:2px solid var(--accent-indigo); background:rgba(99,102,241,0.05);">
+<h3 style="font-size:18px; margin-bottom:12px; font-weight:700; color:var(--accent-indigo);">📋 Form Guide Section</h3>
+<textarea id="formGuideTextInput" placeholder="Paste or upload Form Guide JSON here...
+Expected format:
+{
+  &quot;horses&quot;: [
+    {
+      &quot;silkNumber&quot;: 3,
+      &quot;name&quot;: &quot;Without Fail&quot;,
+      &quot;form&quot;: &quot;421051&quot;,
+      &quot;rating&quot;: 78,
+      &quot;jockey&quot;: &quot;J. Smith&quot;,
+      ...
+    }
+  ]
+}" style="min-height:120px;" aria-label="Form guide data input"></textarea>
+<div style="display:flex; gap:8px; margin-top:8px; align-items:stretch;">
+<button class="btn" style="background:linear-gradient(135deg,#6366f1,#818cf8); flex:1; margin-top:0;" onclick="app.uploadFormGuide()">📋 Upload/Parse Form Guide</button>
+<button class="btn" style="background:linear-gradient(135deg,#991b1b,#dc2626); flex:0 0 36px; width:36px; padding:6px; font-size:16px; margin-top:0; min-width:0;" onclick="app.clearFormGuide()">🗑</button>
+</div>
+<p style="color:var(--text-muted); font-size:11px; margin-top:5px;">Accepts: JSON format <strong style="color:#a78bfa;">or</strong> <strong style="color:#a78bfa;">SportsBetForm.com.au</strong> — copy &amp; paste all horse entries directly from the PDF/page</p>
+<div id="formGuideStatus" class="hidden" style="margin-top:8px; padding:10px; background:rgba(16,185,129,0.1); border:1px solid var(--accent-green); border-radius:8px;">
+<p style="color:var(--accent-green); font-size:13px; font-weight:600;">✓ Form Guide Loaded</p>
+<p id="formGuideDetails" style="color:var(--text-secondary); font-size:12px; margin-top:4px;"></p>
+</div>
+</div>
+<!-- BOX 1: Speed Data (Average / Early / Mid Late) -->
+<div class="card" style="border:2px solid var(--accent-blue); background:rgba(59,130,246,0.05);">
+<h3 style="font-size:16px; margin-bottom:3px; font-weight:700; color:var(--accent-blue);">📊 FormSectionals — Speed Data</h3>
+<p style="color:var(--text-muted); font-size:11px; margin-bottom:8px;">Paste the <strong style="color:var(--accent-blue);">Average Speed</strong>, <strong style="color:var(--accent-blue);">Early Speed</strong> or <strong style="color:var(--accent-blue);">Mid Late Speed</strong> sort view — or Speed Map JSON</p>
+<textarea id="speedMapTextInput" placeholder="Paste Average Speed / Early Speed / Mid Late Speed sort here..." style="min-height:100px;" aria-label="Speed data input"></textarea>
+<div style="display:flex; gap:8px; margin-top:8px; align-items:stretch;">
+<button class="btn" style="background:linear-gradient(135deg,#3b82f6,#60a5fa); flex:1; margin-top:0; font-size:13px;" onclick="app.uploadSpeedMap()">📊 Parse Speed Data</button>
+<button class="btn" style="background:linear-gradient(135deg,#991b1b,#dc2626); flex:0 0 36px; width:36px; padding:6px; font-size:16px; margin-top:0; min-width:0;" onclick="app.clearSpeedMap()">🗑</button>
+</div>
+<div id="speedMapStatus" class="hidden" style="margin-top:8px; padding:8px 10px; background:rgba(16,185,129,0.1); border:1px solid var(--accent-green); border-radius:8px;">
+<p style="color:var(--accent-green); font-size:12px; font-weight:600;">✓ Speed Data Loaded</p>
+<p id="speedMapDetails" style="color:var(--text-secondary); font-size:11px; margin-top:3px;"></p>
+</div>
+</div>
+
+<!-- BOX 2: Race Order -->
+<div class="card" style="border:2px solid #8b5cf6; background:rgba(139,92,246,0.05);">
+<h3 style="font-size:16px; margin-bottom:3px; font-weight:700; color:#a78bfa;">🏁 FormSectionals — Race Order</h3>
+<p style="color:var(--text-muted); font-size:11px; margin-bottom:8px;">Paste the <strong style="color:#a78bfa;">Race Order</strong> sort view — used to match horses by race number</p>
+<textarea id="raceOrderTextInput" placeholder="Paste Race Order sort view here..." style="min-height:100px;" aria-label="Race order input"></textarea>
+<div style="display:flex; gap:8px; margin-top:8px; align-items:stretch;">
+<button class="btn" style="background:linear-gradient(135deg,#7c3aed,#a78bfa); flex:1; margin-top:0; font-size:13px;" onclick="app.uploadRaceOrder()">🏁 Parse Race Order</button>
+<button class="btn" style="background:linear-gradient(135deg,#991b1b,#dc2626); flex:0 0 36px; width:36px; padding:6px; font-size:16px; margin-top:0; min-width:0;" onclick="app.clearRaceOrder()">🗑</button>
+</div>
+<div id="raceOrderStatus" class="hidden" style="margin-top:8px; padding:8px 10px; background:rgba(139,92,246,0.1); border:1px solid #8b5cf6; border-radius:8px;">
+<p style="color:#a78bfa; font-size:12px; font-weight:600;">✓ Race Order Loaded</p>
+<p id="raceOrderDetails" style="color:var(--text-secondary); font-size:11px; margin-top:3px;"></p>
+</div>
+</div>
+
+<!-- BOX 3: Barrier Order -->
+<div class="card" style="border:2px solid #f59e0b; background:rgba(245,158,11,0.05);">
+<h3 style="font-size:16px; margin-bottom:3px; font-weight:700; color:#fbbf24;">🚧 FormSectionals — Barrier Order</h3>
+<p style="color:var(--text-muted); font-size:11px; margin-bottom:8px;">Paste the <strong style="color:#fbbf24;">Barrier Order</strong> sort view — used for draw position & barrier bias analysis</p>
+<textarea id="barrierOrderTextInput" placeholder="Paste Barrier Order sort view here..." style="min-height:100px;" aria-label="Barrier order input"></textarea>
+<div style="display:flex; gap:8px; margin-top:8px; align-items:stretch;">
+<button class="btn" style="background:linear-gradient(135deg,#b45309,#fbbf24); flex:1; margin-top:0; font-size:13px;" onclick="app.uploadBarrierOrder()">🚧 Parse Barrier Order</button>
+<button class="btn" style="background:linear-gradient(135deg,#991b1b,#dc2626); flex:0 0 36px; width:36px; padding:6px; font-size:16px; margin-top:0; min-width:0;" onclick="app.clearBarrierOrder()">🗑</button>
+</div>
+<div id="barrierOrderStatus" class="hidden" style="margin-top:8px; padding:8px 10px; background:rgba(245,158,11,0.1); border:1px solid #f59e0b; border-radius:8px;">
+<p style="color:#fbbf24; font-size:12px; font-weight:600;">✓ Barrier Order Loaded</p>
+<p id="barrierOrderDetails" style="color:var(--text-secondary); font-size:11px; margin-top:3px;"></p>
+</div>
+</div>
+<div class="card" style="border:2px solid var(--accent-green); background:rgba(16,185,129,0.05);">
+<h3 style="font-size:18px; margin-bottom:12px; font-weight:700; color:var(--accent-green);">⚡ Combined Analysis</h3>
+<p style="color:var(--text-secondary); font-size:13px; margin-bottom:12px;">Merge both Form Guide and Speed Map data for comprehensive predictions</p>
+<button class="btn" style="background:linear-gradient(135deg,#10b981,#34d399); width:100%;" onclick="app.analyzeCombined()" id="combinedAnalyzeBtn" disabled>⚡ Analyze with Both Guides</button>
+<p id="combinedStatus" style="color:var(--text-muted); font-size:12px; margin-top:8px;">Load both Form Guide and Speed Map to enable analysis</p>
+</div>
+<div class="card" style="border:2px solid var(--accent-green); background:rgba(16,185,129,0.04);">
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+<h3 style="font-size:17px; font-weight:700; color:var(--accent-green); margin:0;" id="raceCardTitle">Analyze Race</h3>
+<div id="raceCardModelBadge" style="font-size:11px; font-weight:700; padding:4px 12px; border-radius:20px; background:linear-gradient(135deg,#059669,#10b981); color:white;">
+            🧠 BasePredictor
+        </div>
+</div>
+
+<!-- Saturday Mode Panel (shown only when Saturday model is active) -->
+<div id="saturdayPanel" style="display:none; background:rgba(185,28,28,0.12); border:1px solid #b91c1c; border-radius:10px; padding:12px; margin-bottom:12px;">
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+<div style="display:flex; align-items:center; gap:8px;">
+<span style="font-size:16px;">🐴</span>
+<span style="color:#fca5a5; font-weight:700; font-size:14px;">Saturday Mode</span>
+<span id="satAutoTag" style="display:none; background:#fca5a5; color:#7f1d1d; font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px;">AUTO</span>
+</div>
+<button onclick="app.exitSaturdayMode()" style="background:rgba(255,255,255,0.1); border:1px solid #fca5a5; color:#fca5a5; font-size:12px; font-weight:600; padding:5px 12px; border-radius:8px; cursor:pointer;">
+    Back to Weekday
+</button>
+</div>
+<p style="color:#fca5a5; font-size:11px; margin-bottom:8px; opacity:0.8;">Predictions use Saturday-only weights. Results here won't affect weekday learning.</p>
+<div style="border-top:1px solid rgba(252,165,165,0.2); padding-top:8px; margin-top:4px;">
+<p style="color:#fca5a5; font-size:12px; font-weight:600; margin-bottom:6px;">📤 Seed from Past Saturday Logs</p>
+<p style="color:var(--text-muted); font-size:11px; margin-bottom:8px;">Upload exported activity log .txt files from past Saturdays</p>
+<input type="file" id="saturdayLogInput" accept=".txt,.json" multiple style="display:none;" onchange="app.importSaturdayLog(event)">
+<button class="btn" style="background:linear-gradient(135deg,#b91c1c,#dc2626); font-size:12px; padding:8px; width:100%; margin-top:0;" onclick="document.getElementById('saturdayLogInput').click()">
+    📤 Upload Saturday Log Files
+</button>
+<div id="satLogStatus" style="margin-top:6px; font-size:11px; color:#fca5a5; min-height:16px;"></div>
+</div>
+</div>
+
+<p style="color:var(--text-muted); font-size:12px; margin-bottom:8px;" id="raceCardSubtitle">Paste race card — active model predicts</p>
+<textarea id="raceData" placeholder="Paste race card text here...&#10;Extracts: horses, form, odds, jockey, trainer, barrier, weight, track stats, gear changes and more." style="min-height:110px;" aria-label="Race card data input"></textarea>
+<div style="display:flex; gap:6px; margin-top:8px; align-items:center;">
+<button class="btn btn-analyze" id="analyzeBtn" onclick="app.analyze()" style="flex:1; margin-top:0;">⚡ Analyze &amp; Predict</button>
+</div>
+<div class="btn-row" style="margin-top:6px;">
+<button class="btn btn-pending" onclick="app.togglePending()">📋 Pending (<span id="pendingCount">0</span>)</button>
+<button class="btn btn-history" onclick="app.toggleHistory()">📜 History (<span id="historyCount">0</span>)</button>
+<button class="btn" style="background:linear-gradient(135deg,#b45309,#f59e0b); color:#000;" onclick="app.toggleBetting()">💰 Betting (<span id="bettingCount">0</span>)</button>
+</div>
+<div class="btn-row">
+<button class="btn" style="background:linear-gradient(135deg,#0f172a,#1e293b); border:1px solid #334155;" onclick="app.toggleActivityLog()">📝 Activity Log (<span id="logCount">0</span>)</button>
+<button class="btn" style="background:linear-gradient(135deg,#0c4a6e,#0369a1); border:1px solid #0369a1; margin-top:4px;" onclick="app.toggleVenueProfiles()">🗺 Venue Profiles (<span id="venueCount">0</span>)</button>
+</div>
+<div style="margin-top:6px;">
+<button id="monitorBtn" class="btn" style="width:100%; background:linear-gradient(135deg,#312e81,#4338ca); border:2px solid #6366f1; opacity:0.45; cursor:not-allowed;" onclick="app.openMonitor()" disabled>
+  📊 Day Monitor <span id="monitorRaceCount" style="font-size:11px; opacity:0.8;">(need 10 races today)</span>
+</button>
+</div>
+<div class="btn-row">
+<button class="btn btn-clear" onclick="app.clearAll()">🧹 Clear</button>
+<button class="btn" style="background:linear-gradient(135deg,#6d28d9,#7c3aed);" onclick="app.rebalanceModel()">⚖ Rebalance</button>
+</div>
+<button class="btn" style="background:linear-gradient(135deg,#0e7490,#06b6d4); margin-top:4px;" onclick="app.resetFactorStats()">📊 Reset Factor Stats</button>
+<button class="btn" style="background:linear-gradient(135deg,#b45309,#f59e0b); margin-top:4px; color:#000;" onclick="app.relearnFromHistory()">🔄 Relearn from History</button>
+<button class="btn" style="background:linear-gradient(135deg,#0e7490,#06b6d4); margin-top:4px;" onclick="app.resetSpecialistsOnly()">↩ Reset Specialists Only</button>
+<div class="data-section">
+<h4>📤 Data Management</h4>
+<div class="btn-row" style="margin-top:8px;">
+<button class="btn" style="background:linear-gradient(135deg,#0e7490,#06b6d4);" onclick="app.exportData()">⬇ Backup Data</button>
+<label class="btn" style="background:linear-gradient(135deg,#4338ca,#6366f1); text-align:center; cursor:pointer; margin-top:0;">⬆ Restore Backup<input type="file" id="importInput" accept=".json" style="display:none;" onchange="app.importData(event)"></label>
+</div>
+<p style="color:#475569; font-size:11px; margin-top:6px;">Backup saves everything: history, weights, venue profiles, betting. Use to transfer between devices or before major changes.</p>
+<div style="margin-top:6px; margin-bottom:2px;">
+<label style="color:#94a3b8; font-size:11px; font-weight:600; display:block; margin-bottom:3px;">🔑 Anthropic API Key (for AI Audit)</label>
+<div style="display:flex; gap:6px; align-items:center;">
+<input type="password" id="apiKeyInput" placeholder="sk-ant-..." style="flex:1; padding:7px 10px; background:#0a0e1a; color:#e2e8f0; border:1px solid #4338ca; border-radius:8px; font-size:12px;" oninput="window.ANTHROPIC_API_KEY=this.value;" />
+<button onclick="document.getElementById('apiKeyInput').type=document.getElementById('apiKeyInput').type==='password'?'text':'password'" style="background:#1e2d4a;border:1px solid #4338ca;color:#94a3b8;padding:7px 10px;border-radius:8px;cursor:pointer;font-size:13px;">👁</button>
+</div>
+<p style="color:#475569; font-size:10px; margin-top:3px;">Key stays in memory only — never saved to disk or localStorage</p>
+</div>
+<button class="btn" style="background:linear-gradient(135deg,#312e81,#4338ca); margin-top:6px; border:1px solid #6366f1;" onclick="app.openManualAudit()">🤖 Run AI Audit Now</button>
+<button class="btn" style="background:linear-gradient(135deg,#b45309,#f59e0b); margin-top:8px; color:#000;" onclick="app.resetWeightsOnly()">↺ Reset Weights to Factory (Keep History)</button>
+<button class="btn" style="background:linear-gradient(135deg,#065f46,#10b981); margin-top:6px; border:1px solid #34d399;" onclick="app.safeReset()">🛡 Safe Reset (Kimi/Grok/GPT/Gemini/Saturday — Base Protected)</button>
+<button class="btn" style="background:linear-gradient(135deg,#92400e,#f59e0b); margin-top:6px; border:1px solid #fbbf24; color:#000;" onclick="app.resetBaseModel()">⚠ Reset Base Model</button>
+<button class="btn" style="background:linear-gradient(135deg,#991b1b,#dc2626); margin-top:6px;" onclick="app.resetAllData()">🗑 Reset All Data (Wipes Everything)</button>
+</div>
+<div id="formGuidePicker" class="data-section hidden" style="border:2px solid var(--accent-purple); background:rgba(124,58,237,0.08);">
+<h4>📋 Form Guide Loaded</h4>
+<p id="formGuideInfo" style="color:var(--text-secondary); font-size:12px; margin-bottom:8px;"></p>
+<select id="formGuideRaceSelect" style="width:100%; padding:10px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border); border-radius:8px; font-size:14px; margin-bottom:8px;"></select>
+<button class="btn" style="background:linear-gradient(135deg,#7c3aed,#a855f7); width:100%;" onclick="app.loadFormGuideRace()">⚡ Analyze Selected Race</button>
+</div>
+</div>
+<div id="loading" class="loading hidden"><div class="spinner"></div><p style="color:var(--text-muted)">Analyzing with enhanced factors...</p></div>
+<div id="raceInfo" class="race-info hidden"></div>
+<!-- ── UNIFIED: model picks + result entry + re-run in one panel ─────── -->
+<div id="savePrompt" class="save-prompt hidden">
+
+  <!-- Live race panel: all model picks + inline result entry -->
+  <div id="allModelPicksPanel" style="display:none;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+      <h3 style="margin:0; font-size:15px; color:var(--text-primary);">📊 All Model Picks</h3>
+      <button class="btn" onclick="app._showSaveForLater()" style="background:var(--bg-input); border:1px solid var(--border); color:var(--text-secondary); font-size:11px; padding:5px 10px;">💾 Save for Later</button>
+    </div>
+    <!-- Late scratch quick-mark -->
+    <div id="lateScratchBar" style="display:none; margin-bottom:10px; padding:8px 10px; background:rgba(239,68,68,0.07); border:1px solid #ef444444; border-radius:8px;">
+      <div style="font-size:11px; color:#ef4444; font-weight:700; margin-bottom:6px; letter-spacing:0.3px;">✕ MARK LATE SCRATCH</div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;" id="lateScratchBtns"></div>
+    </div>
+    <button onclick="app._toggleScratchBar()" style="background:transparent; border:1px dashed #ef444455; color:#ef4444; border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; margin-bottom:8px; width:100%;">✕ Late Scratch?</button>
+    <!-- Per-model pick rows filled by renderAllModelPicks() -->
+    <div id="allModelPicksTable" style="margin-bottom:14px;"></div>
+    <!-- Result entry -->
+    <div style="border-top:1px solid var(--border); padding-top:12px;">
+      <p style="color:var(--text-secondary); font-size:12px; margin:0 0 8px; text-transform:uppercase; letter-spacing:.05em;">🏆 Actual Result</p>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:10px;">
+        <div>
+          <label style="font-size:11px; color:var(--text-secondary); display:block; margin-bottom:3px;">1st Place *</label>
+          <select id="winner1Select" aria-required="true" style="width:100%; background:var(--bg-input); border:1px solid var(--border); color:var(--text-primary); border-radius:6px; padding:6px 8px; font-size:13px;"></select>
+        </div>
+        <div>
+          <label style="font-size:11px; color:var(--text-secondary); display:block; margin-bottom:3px;">2nd Place</label>
+          <select id="winner2Select" style="width:100%; background:var(--bg-input); border:1px solid var(--border); color:var(--text-primary); border-radius:6px; padding:6px 8px; font-size:13px;"></select>
+        </div>
+        <div>
+          <label style="font-size:11px; color:var(--text-secondary); display:block; margin-bottom:3px;">3rd Place</label>
+          <select id="winner3Select" style="width:100%; background:var(--bg-input); border:1px solid var(--border); color:var(--text-primary); border-radius:6px; padding:6px 8px; font-size:13px;"></select>
+        </div>
+      </div>
+      <button id="recordRerunBtn" class="btn btn-winner" onclick="app.recordAndRerun()" style="width:100%; font-size:14px; padding:11px; background:linear-gradient(135deg,#10b981,#059669);">
+        ✅ Record Result &amp; Re-run All Models
+      </button>
+    </div>
+    <!-- Re-run results appear here inline -->
+    <div id="unifiedRerunResult" style="margin-top:12px; display:none;"></div>
+  </div>
+
+  <!-- Save-for-later fallback (shown when race not yet run or single-model) -->
+  <div id="singleModelSave" style="display:none;">
+    <h3 style="margin:0 0 6px;">💾 Save this prediction?</h3>
+    <p style="color:var(--text-secondary); font-size:13px; margin-bottom:10px;">Saved to Pending — enter results after the race.</p>
+    <div style="display:flex; gap:6px;">
+      <button class="btn btn-save" onclick="app.saveAllModels()" style="flex:1;">💾 Save All Models</button>
+      <button class="btn" onclick="app.savePending()" style="background:var(--bg-input); border:1px solid var(--border); color:var(--text-secondary); font-size:13px; padding:8px 14px;">Active model only</button>
+    </div>
+    <button class="btn" onclick="app._showLivePanel()" style="width:100%; margin-top:6px; background:transparent; border:1px solid var(--border); color:var(--text-secondary); font-size:12px; padding:7px;">⚡ Race already done — enter result now</button>
+  </div>
+
+</div>
+
+<!-- winnerBox kept for compatibility but hidden — unified panel handles result entry -->
+<div id="winnerBox" class="winner-box hidden" style="display:none !important; position:absolute; visibility:hidden;"></div>
+<div id="predictions" class="hidden"></div>
+<div id="betSection" class="bet-section hidden">
+
+  <!-- MODEL BET BOARD — all 4 models suggest their best bet -->
+  <div id="consensusAdvisor"></div>
+
+</div>
+<div id="pendingPanel" class="card hidden">
+<h3 style="font-size:18px; margin-bottom:12px; font-weight:700;">📋 Pending Races</h3>
+<p style="color:var(--text-secondary); font-size:14px; margin-bottom:12px;">Load a race to record results</p>
+<div id="pendingList"><p style="color:var(--text-muted);">No pending races.</p></div>
+<button id="deleteAllPendingBtn" class="btn" style="background:linear-gradient(135deg,#991b1b,#dc2626); width:100%; margin-top:12px; display:none;" onclick="app.deleteAllPending()">🗑 Delete All Pending</button>
+</div>
+<div id="historyPanel" class="card hidden">
+<h3 style="font-size:18px; margin-bottom:12px; font-weight:700;">📜 Race History</h3>
+<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;" id="historyFilterBtns">
+<button onclick="app.setHistoryFilter('all')" id="hfAll" style="padding:5px 12px; font-size:12px; font-weight:600; border:none; border-radius:20px; cursor:pointer; background:var(--accent-indigo); color:white;">All</button>
+<button onclick="app.setHistoryFilter('base')" id="hfBase" style="padding:5px 12px; font-size:12px; font-weight:600; border:none; border-radius:20px; cursor:pointer; background:var(--bg-input); color:var(--text-secondary);">🧠 Base</button>
+<button onclick="app.setHistoryFilter('custom')" id="hfCustom" style="padding:5px 12px; font-size:12px; font-weight:600; border:none; border-radius:20px; cursor:pointer; background:var(--bg-input); color:var(--text-secondary);">🔵 Kimi</button>
+<button onclick="app.setHistoryFilter('custom2')" id="hfCustom2" style="padding:5px 12px; font-size:12px; font-weight:600; border:none; border-radius:20px; cursor:pointer; background:var(--bg-input); color:var(--text-secondary);">⚡ Grok</button>
+<button onclick="app.setHistoryFilter('custom3')" id="hfCustom3" style="padding:5px 12px; font-size:12px; font-weight:600; border:none; border-radius:20px; cursor:pointer; background:var(--bg-input); color:var(--text-secondary);">🤖 GPT</button>
+<button onclick="app.setHistoryFilter('saturday')" id="hfSaturday" style="padding:5px 12px; font-size:12px; font-weight:600; border:none; border-radius:20px; cursor:pointer; background:var(--bg-input); color:var(--text-secondary);">🐴 Saturday</button>
+</div>
+<div id="historyList"><p style="color:var(--text-muted);">No races recorded yet.</p></div>
+</div>
+<div id="bettingPanel" class="card hidden">
+<h3 style="font-size:18px; margin-bottom:12px; font-weight:700; color:var(--accent-gold);">💰 Betting Ledger</h3>
+<div id="bettingStatsBox"></div>
+<div id="bettingList"><p style="color:var(--text-muted);">No bets recorded yet.</p></div>
+<button class="btn" style="background:linear-gradient(135deg,#991b1b,#dc2626); width:100%; margin-top:12px;" onclick="app.clearAllBets()">🗑 Clear All Bets</button>
+</div>
+<div id="activityLogPanel" class="card hidden" style="border:1px solid #334155; background:rgba(15,23,42,0.8);">
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+<h3 style="font-size:17px; font-weight:700; color:#94a3b8; margin:0;">📝 Activity Log</h3>
+<div style="display:flex; gap:6px;">
+<button class="btn" style="background:linear-gradient(135deg,#059669,#10b981); font-size:12px; padding:6px 12px; margin:0;" onclick="app.exportActivityLog()">⬇ Export</button>
+<button class="btn" style="background:linear-gradient(135deg,#991b1b,#dc2626); font-size:12px; padding:6px 12px; margin:0;" onclick="app.clearActivityLog()">🗑 Clear</button>
+</div>
+</div>
+<p style="color:#475569; font-size:11px; margin-bottom:10px;">Every prediction, result, learning nudge and peer observation -- newest first</p>
+<div id="activityLogList" style="max-height:500px; overflow-y:auto; font-family:monospace; font-size:11px; line-height:1.6;">
+<p style="color:#475569;">No activity yet.</p>
+</div>
+</div>
+
+<!-- Venue Profiles Panel -->
+<div id="venueProfilesPanel" class="card hidden" style="border:1px solid #0369a1; background:rgba(3,105,161,0.06);">
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+<h3 style="font-size:17px; font-weight:700; color:#38bdf8; margin:0;">🗺 Venue Profiles</h3>
+<button class="btn" style="background:linear-gradient(135deg,#991b1b,#dc2626); font-size:12px; padding:6px 12px; margin:0;" onclick="app.clearVenueProfiles()">Reset All</button>
+</div>
+<p style="color:#475569; font-size:11px; margin-bottom:10px;">Each track learns its own weight adjustments. More races = stronger influence on predictions (up to 35% blend).</p>
+<div id="venueProfilesList" style="max-height:500px; overflow-y:auto;"></div>
+</div>
+
+<!-- Day Monitor Panel -->
+<div id="monitorPanel" class="card hidden" style="border:2px solid #6366f1; background:rgba(99,102,241,0.04);">
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+<h3 style="font-size:17px; font-weight:700; color:#a5b4fc; margin:0;">📊 Day Monitor</h3>
+<button onclick="document.getElementById('monitorPanel').classList.add('hidden')" style="background:none; border:1px solid #4338ca; color:#a5b4fc; border-radius:8px; padding:5px 12px; cursor:pointer; font-size:12px; font-family:inherit;">Close</button>
+</div>
+<p id="monitorDateLabel" style="color:#6366f1; font-size:12px; margin-bottom:14px; font-weight:600;"></p>
+<div id="monitorBody" style="max-height:75vh; overflow-y:auto;"></div>
+</div>
+
+<div id="customEditorModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); z-index:10000; overflow-y:auto; padding:20px;">
+<div style="max-width:800px; margin:0 auto; background:var(--bg-card); border:2px solid var(--accent-purple); border-radius:14px; padding:24px;">
+<h2 style="font-size:22px; font-weight:700; color:var(--accent-purple); margin-bottom:8px;">🧩 Edit Weights</h2>
+<div style="background:rgba(245,158,11,0.08); border:1px solid var(--accent-gold); border-radius:10px; padding:12px; margin-bottom:14px;">
+<p style="color:var(--accent-gold); font-size:12px; font-weight:700; margin-bottom:8px;">🏷 Model Name</p>
+<div style="display:flex; gap:8px; align-items:center;">
+<input id="modelNameInput" type="text" maxlength="20" placeholder="e.g. MyModel, Claude, Dave..." style="flex:1; padding:9px 12px; background:var(--bg-input); border:2px solid var(--border); border-radius:8px; color:var(--text-primary); font-size:14px; font-weight:600; font-family:'Outfit',sans-serif;">
+<button class="btn" style="background:linear-gradient(135deg,#d97706,#f59e0b); color:#000; font-size:13px; padding:9px 16px; width:auto; margin-top:0;" onclick="app.saveModelName()">Rename</button>
+</div>
+<p style="color:var(--text-muted); font-size:11px; margin-top:6px;">Name appears in model selector, history, leaderboard and consensus advisor. Max 20 chars.</p>
+</div>
+<div style="background:rgba(99,102,241,0.08); border:1px solid var(--accent-indigo); border-radius:10px; padding:14px; margin-bottom:16px;">
+<p style="color:var(--accent-indigo); font-size:13px; font-weight:700; margin-bottom:6px;">📋 Paste Weights Here to Auto-Apply</p>
+<p style="color:var(--text-muted); font-size:11px; margin-bottom:8px;">Paste any format -- <code>Odds: 160</code>, <code>**Odds:** 160.00</code>, bullet lists, markdown, plain text. It will find the numbers.</p>
+<textarea id="weightPasteInput" placeholder="Paste your weight config here e.g:&#10;Odds: 160&#10;Form Consistency: 120&#10;Career Place: 150&#10;Top3 Weight: 0.90" style="width:100%; min-height:90px; padding:8px; background:var(--bg-input); border:1px solid var(--border); border-radius:6px; color:var(--text-primary); font-size:12px; font-family:monospace; box-sizing:border-box; resize:vertical;"></textarea>
+<div style="display:flex; gap:8px; margin-top:8px;">
+<button class="btn" style="flex:1; background:linear-gradient(135deg,#4f46e5,#6366f1); font-size:13px; padding:8px;" onclick="app.applyPastedWeights()">⚡ Apply Pasted Weights</button>
+<button class="btn" style="background:var(--bg-input); border:1px solid var(--border); color:var(--text-muted); font-size:12px; padding:8px 12px;" onclick="document.getElementById('weightPasteInput').value=''">✕ Clear</button>
+</div>
+<div id="weightPasteStatus" style="display:none; margin-top:8px; font-size:12px; padding:6px 10px; border-radius:6px;"></div>
+</div>
+<div id="weightEditorContent" style="max-height:420px; overflow-y:auto; padding-right:10px;">
+</div>
+<div style="display:flex; gap:8px; margin-top:16px;">
+<button class="btn" style="flex:1; background:linear-gradient(135deg,#059669,#10b981);" onclick="app.saveCustomWeights()">💾 Save Changes</button>
+<button class="btn" style="flex:1; background:linear-gradient(135deg,#6d28d9,#7c3aed);" onclick="app.resetCustomToBase()">🔄 Reset to Base</button>
+<button class="btn" style="flex:1; background:linear-gradient(135deg,#991b1b,#dc2626);" onclick="app.closeCustomEditor()">✖ Cancel</button>
+</div>
+</div>
+</div>
+  <script defer src="js/app-state.js"></script>
+  <script defer src="js/parse.js"></script>
+  <script defer src="js/score.js"></script>
+  <script defer src="js/learn.js"></script>
+  <script defer src="js/render.js"></script>
+  <script defer src="js/record.js"></script>
+  <script defer src="js/app.js"></script>
+</script>
+</body>
+</html>
