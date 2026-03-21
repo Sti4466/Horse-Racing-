@@ -215,7 +215,8 @@ Expected format:
 </div>
 <button class="btn" style="background:linear-gradient(135deg,#312e81,#4338ca); margin-top:6px; border:1px solid #6366f1;" onclick="app.openManualAudit()">🤖 Run AI Audit Now</button>
 <button class="btn" style="background:linear-gradient(135deg,#b45309,#f59e0b); margin-top:8px; color:#000;" onclick="app.resetWeightsOnly()">↺ Reset Weights to Factory (Keep History)</button>
-<button class="btn" style="background:linear-gradient(135deg,#065f46,#10b981); margin-top:6px; border:1px solid #34d399;" onclick="app.safeReset()">🛡 Safe Reset (Factory Weights + Clean Slate)</button>
+<button class="btn" style="background:linear-gradient(135deg,#065f46,#10b981); margin-top:6px; border:1px solid #34d399;" onclick="app.safeReset()">🛡 Safe Reset (Kimi/Grok/GPT/Gemini/Saturday — Base Protected)</button>
+<button class="btn" style="background:linear-gradient(135deg,#92400e,#f59e0b); margin-top:6px; border:1px solid #fbbf24; color:#000;" onclick="app.resetBaseModel()">⚠ Reset Base Model</button>
 <button class="btn" style="background:linear-gradient(135deg,#991b1b,#dc2626); margin-top:6px;" onclick="app.resetAllData()">🗑 Reset All Data (Wipes Everything)</button>
 </div>
 <div id="formGuidePicker" class="data-section hidden" style="border:2px solid var(--accent-purple); background:rgba(124,58,237,0.08);">
@@ -1493,6 +1494,9 @@ raceInfoEl.classList.remove('hidden');
 // ── learn ─────────────────────────────────────────────
 function learn(actual, predicted, actual2, predicted2, actual3, predicted3) {
 var msg = '';
+// Load scar tissue drift guard for base model protection
+app._scarTissueDriftGuard = null;
+try { app._scarTissueDriftGuard = JSON.parse(localStorage.getItem('horseBaseDriftGuard') || 'null'); } catch(e) {}
 var actualTop3 = [actual, actual2, actual3].filter(function(h) { return h; });
 var predictedTop3 = [predicted, predicted2, predicted3].filter(function(h) { return h; });
 var predictedNames = predictedTop3.map(function(h) { return h.name; });
@@ -1592,6 +1596,13 @@ function adjustWeight(weightKey, statKey, adjustment, strength, trackStats) {
 strength = strength || 1;
 trackStats = (trackStats === undefined) ? true : trackStats;
 var change = adjustment * strength * marginMult;
+// Scar tissue drift guard: reduce reinforcement 50% on protected factors for base model
+if (adjustment > 0 && app.W === app.baseWeights) {
+  var _dg = app._scarTissueDriftGuard;
+  if (_dg && _dg.active && _dg.protectedFactors && _dg.protectedFactors.indexOf(weightKey) !== -1) {
+    change *= 0.5;
+  }
+}
 app.W[weightKey] = Math.max(0.1, (app.W[weightKey] || 1) * (1 + change));
 if (trackStats) {
 if (adjustment > 0 && app.factorStats[statKey + 'Success'] !== undefined)
@@ -1733,6 +1744,16 @@ app.W[key] = Math.max(bounds[key][0], Math.min(bounds[key][1], app.W[key]));
 // Update venue-specific profile for the current track
 var currentTrack = app.raceInfo && app.raceInfo.track ? app.raceInfo.track : null;
 if (currentTrack) updateVenueProfile(currentTrack, hits, actual, predicted);
+// Update drift guard race counter if base model just learned
+if (app.W === app.baseWeights) {
+  var _dgu = app._scarTissueDriftGuard;
+  if (_dgu && _dgu.active) {
+    _dgu.racesRun = (_dgu.racesRun || 0) + 1;
+    if (_dgu.racesRun >= (_dgu.guardsUntilRace || 100)) _dgu.active = false;
+    localStorage.setItem('horseBaseDriftGuard', JSON.stringify(_dgu));
+    app._scarTissueDriftGuard = _dgu;
+  }
+}
 saveData();
 return msg + ' (Top 3 hits: ' + hits + '/3)';
 }
@@ -8802,49 +8823,134 @@ if (!document.getElementById('pendingPanel').classList.contains('hidden')) rende
 }
 };
 app.safeReset = function() {
-var msg = '\u{1F6E1} SAFE RESET\n\n';
-msg += 'This will:\n';
-msg += '  \u2713 Reset ALL 6 model weights to factory defaults\n';
-msg += '  \u2713 Clear all race history, pending races, bets\n';
-msg += '  \u2713 Clear jockey/trainer stats & venue profiles\n';
-msg += '  \u2713 Clear factor stats & activity log\n';
-msg += '  \u2713 Sanitize weights so rating/weight are correct scale\n\n';
-msg += 'Everything starts completely fresh.\n';
-msg += 'This cannot be undone. Continue?';
+var msg = '\u{1F6E1} SAFE RESET (Non-Base Models)\n\n';
+msg += 'This will reset weights for:\n';
+msg += '  \u2713 Kimi, Grok, GPT, Gemini, Saturday \u2014 back to factory defaults\n\n';
+msg += 'This will NOT touch:\n';
+msg += '  \u2717 BasePredictor weights (protected)\n';
+msg += '  \u2717 Race history, jockey/trainer stats\n';
+msg += '  \u2717 Factor stats, venue profiles\n\n';
+msg += 'Continue?';
 if (!confirm(msg)) return;
-var keysToWipe = [
-'horseRaceHistoryV2','horsePendingRacesV2',
-'horseModelWeightsV2','horseCustomWeightsV3','horseCustom2WeightsV3',
-'horseCustom3WeightsV3','horseSaturdayWeightsV3',
-'horseActiveModel','horseBaseMetrics','horseCustomMetrics',
-'horseCustom2Metrics','horseCustom3Metrics',
-'horseSaturdayMetrics','horseVenueProfiles','horseActivityLog',
-'horseFactorStatsV2','horseJockeyStatsV2','horseTrainerStatsV2',
-'horseBettingHistoryV2','horseAIAuditCount'
-];
-keysToWipe.forEach(function(k) { localStorage.removeItem(k); });
-app.raceHistory = []; app.pendingRaces = []; app.bettingHistory = [];
-app.activeBets = []; app.activityLog = []; app.jockeyStats = {};
-app.trainerStats = {}; app.venueProfiles = {}; app.patternLibrary = {}; app.weightReferences = {}; app.factorStats = null;
-app._batchSession = null; app.aiAuditRaceCount = 0;
-app.baseWeights    = app.sanitizeWeights(Object.assign({}, app.defaultWeights, {
-  // AI Audit 20/03/2026: odds reduced from 755 toward blend; formConsistency+freshness+tactical lifted
-  odds: 680, form: 90, formConsistency: 51, trackWin: 130, trackDistWin: 111, jockeyWin: 81, trainerWin: 52, freshness: 52, tactical: 53, trackCondition: 138, classChange: 91, pacePressure: 70, formMomentum: 101, finishStrength: 85, sectionalSpeed: 48, weatherRailBias: 69
-}));
-app.baseMetrics = blankMetrics(); app.customMetrics = blankMetrics();
-app.custom2Metrics = blankMetrics(); app.custom3Metrics = blankMetrics();
-app.saturdayMetrics = blankMetrics();
-app.activeModel = 'base';
-app.W = app.baseWeights;
+app.customWeights = Object.assign({}, app.defaultWeights, {
+  odds: 200, form1: 90, form2: 60, form3: 30, form4: 15, form5: 8,
+  formConsistency: 70, freshness: 30, jockeyWin: 35, trainerWin: 25,
+  trackCondition: 75, lastStartMargin: 60, formMomentum: 75, finishStrength: 55,
+  pacePressure: 30, classChange: 40, sectionalSpeed: 45
+});
+app.custom2Weights = Object.assign({}, app.defaultWeights, {
+  odds: 650, form1: 35, form2: 20, form3: 12, form4: 8, form5: 4,
+  formConsistency: 25, freshness: 20, jockeyWin: 70, trainerWin: 55,
+  trackCondition: 90, lastStartMargin: 25, formMomentum: 30, finishStrength: 25,
+  pacePressure: 45, classChange: 65, sectionalSpeed: 40, jockeyForm: 55, trainerForm: 40,
+  top3Weight: 0.30, winWeight: 0.70,
+  learningObjective: 'top2'
+});
+app.custom3Weights = Object.assign({}, app.defaultWeights, {
+  odds: 120, rating: 0.9, careerWin: 80, careerPlace: 180,
+  trackWin: 55, trackDistWin: 70, jockeyWin: 30, trainerWin: 28,
+  form1: 30, form2: 25, form3: 22, form4: 18, form5: 14,
+  formConsistency: 110, freshness: 65, weight: 2.0,
+  tactical: 35, trackCondition: 120, firstUp: 55, distanceSuit: 60,
+  lastStartMargin: 45, railPosition: 25, gearChange: 20,
+  pacePressure: 28, classChange: 40, formMomentum: 55, finishStrength: 85,
+  sectionalSpeed: 30, weatherRailBias: 35,
+  secondUpForm: 70, jockeyForm: 25, trainerForm: 22,
+  top3Weight: 0.85, winWeight: 0.15,
+  learningObjective: 'top3'
+});
+app.saturdayWeights = Object.assign({}, app.defaultWeights);
+app.customMetrics  = { correct: 0, total: 0, top2: 0, top3: 0 };
+app.custom2Metrics = { correct: 0, total: 0, top2: 0, top3: 0 };
+app.custom3Metrics = { correct: 0, total: 0, top2: 0, top3: 0 };
+app.saturdayMetrics = { correct: 0, total: 0, top2: 0, top3: 0 };
+if (app.activeModel === 'custom') app.W = app.customWeights;
+else if (app.activeModel === 'custom2') app.W = app.custom2Weights;
+else if (app.activeModel === 'custom3') app.W = app.custom3Weights;
+else if (app.activeModel === 'saturday') app.W = app.saturdayWeights;
 saveData();
-app.switchModel('base', true);
 updateStats();
 app.updateModelMetrics();
-document.getElementById('statsBar').classList.add('hidden');
-if (!document.getElementById('historyPanel').classList.contains('hidden')) renderHistory();
-if (!document.getElementById('pendingPanel').classList.contains('hidden')) renderPending();
-showSuccess('Safe Reset complete — all 6 models at factory defaults. Ready to learn from scratch.');
-addLog('info', 'Safe Reset — factory weights, clean slate', 'Rating weight: ' + app.baseWeights.rating + ' (correct scale 1.2)');
+showSuccess('Safe Reset complete \u2014 Kimi/Grok/GPT/Gemini/Saturday reset to factory defaults. BasePredictor protected.');
+addLog('info', 'Safe Reset \u2014 5 non-Base models reset to factory weights. BasePredictor protected.', 'Race history preserved. Base weights unchanged.');
+};
+app.resetBaseModel = function() {
+var msg = '\u26a0 RESET BASE MODEL\n\n';
+msg += 'This will wipe Base\'s learned weights. Its scar tissue memory will be saved first.\n\n';
+msg += 'Base will return to factory defaults and resume learning fresh.\n';
+msg += 'Overweighted factors will be remembered and dampened for the next 100 races.\n\n';
+msg += 'This cannot be undone. Continue?';
+if (!confirm(msg)) return;
+// --- A) Compute scar tissue snapshot before wiping ---
+var now = new Date();
+var timestamp = now.toISOString().slice(0, 19);
+// Accuracy at reset
+var accuracyAtReset = 0;
+if (app.baseMetrics && app.baseMetrics.total > 0) {
+  accuracyAtReset = Math.round((app.baseMetrics.top3 / app.baseMetrics.total) * 1000) / 10;
+}
+// Trend from last 20 races
+var trend = 'stable';
+var history = app.raceHistory || [];
+if (history.length >= 20) {
+  var last20 = history.slice(-20);
+  var prev10 = last20.slice(0, 10);
+  var last10 = last20.slice(10);
+  var prev10Acc = prev10.reduce(function(s, r) { return s + (r.top3Hits || 0); }, 0) / 10;
+  var last10Acc = last10.reduce(function(s, r) { return s + (r.top3Hits || 0); }, 0) / 10;
+  var diff = (last10Acc - prev10Acc) / 3 * 100; // divide by 3 to normalise against max possible hits/race
+  if (diff < -5) trend = 'declining';
+  else if (diff > 5) trend = 'improving';
+}
+// Overweighted factors (>15% above factory default)
+var scarFactorKeys = ['odds', 'form1', 'formConsistency', 'trackWin', 'trackDistWin', 'jockeyWin',
+  'trainerWin', 'freshness', 'pacePressure', 'classChange', 'formMomentum', 'sectionalSpeed',
+  'trackCondition', 'careerWin', 'finishStrength', 'weatherRailBias', 'form2', 'tactical',
+  'firstUp', 'distanceSuit', 'lastStartMargin', 'railPosition', 'gearChange'];
+var overweightedFactors = [];
+for (var owi = 0; owi < scarFactorKeys.length; owi++) {
+  var fk = scarFactorKeys[owi];
+  var dflt = app.defaultWeights[fk];
+  var curr = app.baseWeights[fk];
+  if (dflt && curr && curr > dflt * 1.15) overweightedFactors.push(fk);
+}
+// Build snapshot
+var snapshot = {
+  timestamp: timestamp,
+  accuracyAtReset: accuracyAtReset,
+  trend: trend,
+  racesCompleted: app.baseMetrics ? (app.baseMetrics.total || 0) : 0,
+  overweightedFactors: overweightedFactors,
+  weightSnapshot: Object.assign({}, app.baseWeights)
+};
+// Append to scar tissue array (max 10)
+var scarTissue = [];
+try { scarTissue = JSON.parse(localStorage.getItem('horseBaseScarTissue') || '[]'); } catch(e) { scarTissue = []; }
+scarTissue.push(snapshot);
+if (scarTissue.length > 10) scarTissue = scarTissue.slice(-10);
+localStorage.setItem('horseBaseScarTissue', JSON.stringify(scarTissue));
+// --- Reset base weights to factory defaults ---
+app.baseWeights = app.sanitizeWeights(Object.assign({}, app.defaultWeights, {
+  odds: 680, formConsistency: 51, trackWin: 130, trackDistWin: 111, jockeyWin: 81, trainerWin: 52, freshness: 52, tactical: 53, trackCondition: 138, classChange: 91, pacePressure: 70, formMomentum: 101, finishStrength: 85, sectionalSpeed: 48, weatherRailBias: 69
+}));
+app.baseMetrics = { correct: 0, total: 0, top2: 0, top3: 0 };
+if (app.activeModel === 'base') app.W = app.baseWeights;
+// --- B) Create drift guard ---
+var driftGuard = {
+  active: true,
+  resetAt: timestamp,
+  racesRun: 0,
+  guardsUntilRace: 100,
+  protectedFactors: overweightedFactors
+};
+localStorage.setItem('horseBaseDriftGuard', JSON.stringify(driftGuard));
+app._scarTissueDriftGuard = driftGuard;
+saveData();
+updateStats();
+app.updateModelMetrics();
+var trendIcon = trend === 'declining' ? '\ud83d\udcc9' : trend === 'improving' ? '\ud83d\udcc8' : '\u27a1';
+showSuccess('Base model reset. Scar tissue saved (accuracy: ' + accuracyAtReset + '%, trend: ' + trendIcon + '). Drift guard active — see Activity Log for details.');
+addLog('info', 'Base model reset \u2014 scar tissue saved. Drift guard active on: ' + (overweightedFactors.join(', ') || 'none'), 'Accuracy at reset: ' + accuracyAtReset + '% | Trend: ' + trend + ' | Races completed: ' + snapshot.racesCompleted);
 };
 app.resetFactorStats = function() {
 if (!confirm('Reset factor effectiveness tracking?\n\nThis zeros all factor percentages. Use "Relearn from History" after to rebuild stats from any races that have stored factor data.\n\nContinue?')) return;
@@ -9053,6 +9159,46 @@ var factorWeightMap = [
   { wkey: 'weatherRailBias',skey: 'weatherRail', label: 'Weather/Rail' }
 ];
 var rptLines = [];
+// --- BASE RESET MEMORY ---
+var _scarTissueData = [];
+try { _scarTissueData = JSON.parse(localStorage.getItem('horseBaseScarTissue') || '[]'); } catch(e) {}
+var _driftGuardData = null;
+try { _driftGuardData = JSON.parse(localStorage.getItem('horseBaseDriftGuard') || 'null'); } catch(e) {}
+rptLines.push('--- BASE RESET MEMORY ---');
+if (_scarTissueData.length === 0) {
+  rptLines.push('No Base resets recorded. Base has been learning continuously.');
+} else {
+  var _scarReversed = _scarTissueData.slice().reverse();
+  for (var _sri = 0; _sri < _scarReversed.length; _sri++) {
+    var _sc = _scarReversed[_sri];
+    var _resetNum = _scarTissueData.length - _sri;
+    var _resetDate = new Date(_sc.timestamp);
+    var _months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var _dateStr = _resetDate.getDate() + ' ' + _months[_resetDate.getMonth()] + ' ' + _resetDate.getFullYear();
+    var _tIcon = _sc.trend === 'declining' ? '\ud83d\udcc9 Declining' : _sc.trend === 'improving' ? '\ud83d\udcc8 Improving' : '\u27a1 Stable';
+    rptLines.push('Reset #' + _resetNum + ' \u2014 ' + _dateStr + ' \u2014 Accuracy: ' + _sc.accuracyAtReset + '% \u2014 Trend: ' + _tIcon);
+    if (_sc.overweightedFactors && _sc.overweightedFactors.length > 0) {
+      var _owStrs = _sc.overweightedFactors.map(function(fk) {
+        var _dflt = app.defaultWeights[fk];
+        var _atReset = _sc.weightSnapshot ? (_sc.weightSnapshot[fk] || _dflt) : _dflt;
+        var _pct = _dflt > 0 ? Math.round(((_atReset - _dflt) / _dflt) * 100) : 0;
+        return fk + ' (+' + _pct + '%)';
+      });
+      rptLines.push('  Overweighted at reset: ' + _owStrs.join(', '));
+    } else {
+      rptLines.push('  Overweighted at reset: none');
+    }
+    rptLines.push('  Races completed before reset: ' + (_sc.racesCompleted || 0));
+    if (_sri === 0 && _driftGuardData && _driftGuardData.active) {
+      var _remaining = Math.max(0, (_driftGuardData.guardsUntilRace || 100) - (_driftGuardData.racesRun || 0));
+      rptLines.push('  Drift Guard: \u2705 Active (' + _remaining + ' races remaining)');
+    } else {
+      rptLines.push('  Drift Guard: \u274c Expired');
+    }
+    rptLines.push('');
+  }
+}
+rptLines.push('');
 rptLines.push('=== BASE MODEL LEARNING DIRECTION REPORT ===');
 rptLines.push('Replayed ' + relearned + ' races | ' + new Date().toLocaleDateString());
 rptLines.push('');
