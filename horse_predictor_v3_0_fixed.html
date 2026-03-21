@@ -9951,6 +9951,8 @@ app.renderAllModelPicks = function() {
       scratchBtns.appendChild(btn);
     });
   }
+  // Always populate the result dropdowns from app.horses
+  buildDropdown();
 };
 
 // ── _showLivePanel ────────────────────────────────────────────────────────────
@@ -10206,17 +10208,47 @@ app.recordAndRerun = function() {
   if (!app._raceModelResults || app._raceModelResults.length === 0) {
     if (typeof app.renderAllModelPicks === 'function') app.renderAllModelPicks();
   }
+  // Reset winnerSet so we can detect success vs validation failure
+  app.winnerSet = false;
   // Delegate to the full multi-model recorder
   app.recordAllModels();
+  // recordAllModels returns early (without setting winnerSet) if validation fails
+  if (!app.winnerSet) return;
+
+  // Remove from pending so the race moves to History
+  if (app.currentPendingId) {
+    app.pendingRaces = app.pendingRaces.filter(function(p){ return p.id !== app.currentPendingId; });
+    app.currentPendingId = null;
+    saveData();
+    updateStats();
+    renderPending();
+  }
+
+  // Settle any active bets for this race using the recorded actuals
+  var actuals = app._lastActuals || [];
+  if (actuals.length > 0) {
+    var allH = app.horses || [];
+    var horseByName = {};
+    allH.forEach(function(h){ horseByName[h.name] = h; });
+    var firstPlace  = actuals[0] ? horseByName[actuals[0]] || null : null;
+    var secondPlace = actuals[1] ? horseByName[actuals[1]] || null : null;
+    var thirdPlace  = actuals[2] ? horseByName[actuals[2]] || null : null;
+    if (typeof settleBets === 'function' && firstPlace) settleBets(firstPlace, secondPlace, thirdPlace);
+  }
 
   // Show re-run results inside the unified panel
   var rerunDiv = document.getElementById('unifiedRerunResult');
-  if (rerunDiv && app._lastActuals && app._lastActuals.length > 0) {
+  if (rerunDiv) {
     rerunDiv.style.display = 'block';
-    if (typeof app._rerunToDiv === 'function') {
-      app._rerunToDiv(rerunDiv);
-    }
+    if (typeof app._rerunToDiv === 'function') app._rerunToDiv(rerunDiv);
   }
+
+  // Show the Betting panel and refresh all betting components
+  var bettingPanel = document.getElementById('bettingPanel');
+  if (bettingPanel) bettingPanel.classList.remove('hidden');
+  if (typeof renderBettingStats === 'function') renderBettingStats();
+  if (typeof renderActiveBets === 'function') renderActiveBets();
+  if (typeof renderConsensusAdvisor === 'function') renderConsensusAdvisor();
 };
 
 var speedMap = {};
