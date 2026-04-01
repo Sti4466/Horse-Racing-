@@ -32,7 +32,6 @@
             <span id="custom3ModelBtnLabel">🎯 GPT</span><br><span style="font-size:11px; opacity:0.8;">Place Finder</span>
 </button>
 </div>
-
 <div id="modelStatus" style="padding:10px; background:rgba(16,185,129,0.1); border:1px solid var(--accent-green); border-radius:8px; margin-bottom:8px;">
 <p style="color:var(--accent-green); font-size:13px; font-weight:600;">[brain] Active: BasePredictor (Self-Learning AI)</p>
 </div>
@@ -8950,7 +8949,7 @@ app.setHistoryFilter = function(filter) {
 app.historyFilter = filter;
 var filters = ['all', 'base', 'custom', 'custom2', 'custom3'];
 var ids     = ['hfAll', 'hfBase', 'hfCustom', 'hfCustom2', 'hfCustom3'];
-var colors  = ['var(--accent-indigo)', 'var(--accent-green)', 'var(--accent-purple)', 'var(--accent-gold)', 'var(--accent-blue)', '#818cf8'];
+var colors  = ['var(--accent-indigo)', 'var(--accent-green)', 'var(--accent-purple)', 'var(--accent-gold)', 'var(--accent-blue)'];
 for (var i = 0; i < filters.length; i++) {
 var btn = document.getElementById(ids[i]);
 if (!btn) continue;
