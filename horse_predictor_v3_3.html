@@ -32,11 +32,7 @@
             <span id="custom3ModelBtnLabel">🎯 GPT</span><br><span style="font-size:11px; opacity:0.8;">Place Finder</span>
 </button>
 </div>
-<div style="display:flex; gap:8px; margin-bottom:12px;">
-<button id="saturdayModelBtn" class="btn" style="flex:1; margin-top:0; background:linear-gradient(135deg,#7f1d1d,#b91c1c); border:1px solid #fca5a5; position:relative;" onclick="app.switchModel('saturday')">
-    [horse] Saturday<br><span style="font-size:11px; opacity:0.8;">Sat. Learning</span>
-</button>
-</div>
+
 <div id="modelStatus" style="padding:10px; background:rgba(16,185,129,0.1); border:1px solid var(--accent-green); border-radius:8px; margin-bottom:8px;">
 <p style="color:var(--accent-green); font-size:13px; font-weight:600;">[brain] Active: BasePredictor (Self-Learning AI)</p>
 </div>
@@ -118,30 +114,6 @@ Expected format:
 <div id="raceCardModelBadge" style="font-size:11px; font-weight:700; padding:4px 12px; border-radius:20px; background:linear-gradient(135deg,#059669,#10b981); color:white;">
             [brain] BasePredictor
         </div>
-</div>
-
-<!-- Saturday Mode Panel (shown only when Saturday model is active) -->
-<div id="saturdayPanel" style="display:none; background:rgba(185,28,28,0.12); border:1px solid #b91c1c; border-radius:10px; padding:12px; margin-bottom:12px;">
-<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
-<div style="display:flex; align-items:center; gap:8px;">
-<span style="font-size:16px;">[horse]</span>
-<span style="color:#fca5a5; font-weight:700; font-size:14px;">Saturday Mode</span>
-<span id="satAutoTag" style="display:none; background:#fca5a5; color:#7f1d1d; font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px;">AUTO</span>
-</div>
-<button onclick="app.exitSaturdayMode()" style="background:rgba(255,255,255,0.1); border:1px solid #fca5a5; color:#fca5a5; font-size:12px; font-weight:600; padding:5px 12px; border-radius:8px; cursor:pointer;">
-    Back to Weekday
-</button>
-</div>
-<p style="color:#fca5a5; font-size:11px; margin-bottom:8px; opacity:0.8;">Predictions use Saturday-only weights. Results here won't affect weekday learning.</p>
-<div style="border-top:1px solid rgba(252,165,165,0.2); padding-top:8px; margin-top:4px;">
-<p style="color:#fca5a5; font-size:12px; font-weight:600; margin-bottom:6px;">[export] Seed from Past Saturday Logs</p>
-<p style="color:var(--text-muted); font-size:11px; margin-bottom:8px;">Upload exported activity log .txt files from past Saturdays</p>
-<input type="file" id="saturdayLogInput" accept=".txt,.json" multiple style="display:none;" onchange="app.importSaturdayLog(event)">
-<button class="btn" style="background:linear-gradient(135deg,#b91c1c,#dc2626); font-size:12px; padding:8px; width:100%; margin-top:0;" onclick="document.getElementById('saturdayLogInput').click()">
-    [export] Upload Saturday Log Files
-</button>
-<div id="satLogStatus" style="margin-top:6px; font-size:11px; color:#fca5a5; min-height:16px;"></div>
-</div>
 </div>
 
 <p style="color:var(--text-muted); font-size:12px; margin-bottom:8px;" id="raceCardSubtitle">Paste race card — active model predicts</p>
@@ -332,7 +304,6 @@ Expected format:
 <button onclick="app.setHistoryFilter('custom')" id="hfCustom" style="padding:5px 12px; font-size:12px; font-weight:600; border:none; border-radius:20px; cursor:pointer; background:var(--bg-input); color:var(--text-secondary);">[Kimi] Kimi</button>
 <button onclick="app.setHistoryFilter('custom2')" id="hfCustom2" style="padding:5px 12px; font-size:12px; font-weight:600; border:none; border-radius:20px; cursor:pointer; background:var(--bg-input); color:var(--text-secondary);">⚡ Grok</button>
 <button onclick="app.setHistoryFilter('custom3')" id="hfCustom3" style="padding:5px 12px; font-size:12px; font-weight:600; border:none; border-radius:20px; cursor:pointer; background:var(--bg-input); color:var(--text-secondary);">[GPT] GPT</button>
-<button onclick="app.setHistoryFilter('saturday')" id="hfSaturday" style="padding:5px 12px; font-size:12px; font-weight:600; border:none; border-radius:20px; cursor:pointer; background:var(--bg-input); color:var(--text-secondary);">[horse] Saturday</button>
 </div>
 <div id="historyList"><p style="color:var(--text-muted);">No races recorded yet.</p></div>
 </div>
@@ -467,12 +438,10 @@ activeModel: 'base',
 baseWeights: null,
 customModelNames: { custom: 'Kimi', custom2: 'Grok', custom3: 'GPT' },
 customWeights: null,
-saturdayWeights: null,
 custom2Weights: null,
 custom3Weights: null,
 baseMetrics:    { correct: 0, total: 0, top2: 0, top3: 0 },
 customMetrics:  { correct: 0, total: 0, top2: 0, top3: 0 },
-saturdayMetrics: { correct: 0, total: 0, top2: 0, top3: 0 },
 custom2Metrics: { correct: 0, total: 0, top2: 0, top3: 0 },
 custom3Metrics: { correct: 0, total: 0, top2: 0, top3: 0 },
 activityLog: [],
@@ -736,7 +705,6 @@ app.custom3Weights = Object.assign({}, app.defaultWeights, {
     top3Weight: 0.85, winWeight: 0.15,
     learningObjective: 'top3'
   });
-app.saturdayWeights = Object.assign({}, app.defaultWeights);
 app.W = app.baseWeights;
 var toastTimer = null;
 
@@ -869,25 +837,14 @@ app.sanitizeWeights(app.custom3Weights);
 }
 }
 
-var savedSaturdayWeights = localStorage.getItem('horseSaturdayWeightsV3');
-if (savedSaturdayWeights) {
-try { var parsedSat = JSON.parse(savedSaturdayWeights); if (parsedSat && typeof parsedSat.odds === 'number') { app.saturdayWeights = parsedSat; app.sanitizeWeights(app.saturdayWeights); } } catch(e) {}
-}
 var savedActiveModel = localStorage.getItem('horseActiveModel');
-if (savedActiveModel && ['base','custom','custom2','custom3','saturday'].indexOf(savedActiveModel) !== -1) {
+if (savedActiveModel && ['base','custom','custom2','custom3'].indexOf(savedActiveModel) !== -1) {
 app.activeModel = savedActiveModel;
 }
 if (app.activeModel === 'custom') app.W = app.customWeights;
 else if (app.activeModel === 'custom2') app.W = app.custom2Weights;
 else if (app.activeModel === 'custom3') app.W = app.custom3Weights;
-else if (app.activeModel === 'saturday') app.W = app.saturdayWeights;
 else app.W = app.baseWeights;
-// Auto-switch to Saturday model on Saturdays — only if user hasn't manually chosen a model
-var satAutoDisabled = localStorage.getItem('horseSatAutoDisabled') === 'true';
-if (new Date().getDay() === 6 && !satAutoDisabled && savedActiveModel !== 'base' && savedActiveModel !== 'custom' && savedActiveModel !== 'custom2' && savedActiveModel !== 'custom3') {
-app.activeModel = 'saturday';
-app.W = app.saturdayWeights;
-}
 var savedBaseMetrics = localStorage.getItem('horseBaseMetrics');
 if (savedBaseMetrics) { try { app.baseMetrics = JSON.parse(savedBaseMetrics); } catch(e) {} }
 var savedCustomMetrics = localStorage.getItem('horseCustomMetrics');
@@ -897,8 +854,6 @@ if (savedCustom2Metrics) { try { app.custom2Metrics = JSON.parse(savedCustom2Met
 var savedCustom3Metrics = localStorage.getItem('horseCustom3Metrics');
 if (savedCustom3Metrics) { try { app.custom3Metrics = JSON.parse(savedCustom3Metrics); } catch(e) {} }
 var savedCustom4Metrics = localStorage.getItem('horseCustom4Metrics');
-var savedSaturdayMetrics = localStorage.getItem('horseSaturdayMetrics');
-if (savedSaturdayMetrics) { try { app.saturdayMetrics = JSON.parse(savedSaturdayMetrics); } catch(e) {} }
 var savedVenueProfiles = localStorage.getItem('horseVenueProfiles');
 if (savedVenueProfiles) { try { app.venueProfiles = JSON.parse(savedVenueProfiles) || {}; } catch(e) {} }
 var savedCustomModelNames = localStorage.getItem('horseCustomModelNames');
@@ -1008,13 +963,11 @@ localStorage.setItem('horseModelWeightsV2', JSON.stringify(app.baseWeights));
 localStorage.setItem('horseCustomWeightsV3', JSON.stringify(app.customWeights));
 localStorage.setItem('horseCustom2WeightsV3', JSON.stringify(app.custom2Weights));
 localStorage.setItem('horseCustom3WeightsV3', JSON.stringify(app.custom3Weights));
-localStorage.setItem('horseSaturdayWeightsV3', JSON.stringify(app.saturdayWeights));
 localStorage.setItem('horseActiveModel', app.activeModel);
 localStorage.setItem('horseBaseMetrics', JSON.stringify(app.baseMetrics));
 localStorage.setItem('horseCustomMetrics', JSON.stringify(app.customMetrics));
 localStorage.setItem('horseCustom2Metrics', JSON.stringify(app.custom2Metrics));
 localStorage.setItem('horseCustom3Metrics', JSON.stringify(app.custom3Metrics));
-localStorage.setItem('horseSaturdayMetrics', JSON.stringify(app.saturdayMetrics));
 localStorage.setItem('horseVenueProfiles', JSON.stringify(app.venueProfiles));
 localStorage.setItem('horsePatternLibrary', JSON.stringify(app.patternLibrary || {}));
 localStorage.setItem('horseWeightReferences', JSON.stringify(app.weightReferences || {}));
@@ -1049,7 +1002,6 @@ baseWeights: app.baseWeights,
 customWeights: app.customWeights,
 custom2Weights: app.custom2Weights,
 custom3Weights: app.custom3Weights,
-  saturdayWeights: app.saturdayWeights,
   bettingHistory: app.bettingHistory || [],
   jockeyStats: app.jockeyStats || {},
   trainerStats: app.trainerStats || {},
@@ -1063,8 +1015,7 @@ custom3Weights: app.custom3Weights,
   baseMetrics: app.baseMetrics,
   customMetrics: app.customMetrics,
   custom2Metrics: app.custom2Metrics,
-  custom3Metrics: app.custom3Metrics,
-  saturdayMetrics: app.saturdayMetrics
+  custom3Metrics: app.custom3Metrics
 };
 var jsonStr = JSON.stringify(data, null, 2);
 try {
@@ -1125,13 +1076,11 @@ if (data.baseWeights) app.baseWeights = data.baseWeights;
 if (data.customWeights) app.customWeights = data.customWeights;
 if (data.custom2Weights) app.custom2Weights = data.custom2Weights;
 if (data.custom3Weights) app.custom3Weights = data.custom3Weights;
-if (data.saturdayWeights) app.saturdayWeights = data.saturdayWeights;
 // Sanitize all imported weights to fix any scale-confusion values
 app.sanitizeWeights(app.baseWeights);
 app.sanitizeWeights(app.customWeights);
 app.sanitizeWeights(app.custom2Weights);
 app.sanitizeWeights(app.custom3Weights);
-app.sanitizeWeights(app.saturdayWeights);
 if (data.factorStats) app.factorStats = data.factorStats;
 if (data.jockeyStats) Object.assign(app.jockeyStats, data.jockeyStats);
 if (data.trainerStats) Object.assign(app.trainerStats, data.trainerStats);
@@ -1155,7 +1104,6 @@ if (data.baseMetrics && data.baseMetrics.total > app.baseMetrics.total) app.base
 if (data.customMetrics && data.customMetrics.total > app.customMetrics.total) app.customMetrics = data.customMetrics;
 if (data.custom2Metrics && data.custom2Metrics.total > app.custom2Metrics.total) app.custom2Metrics = data.custom2Metrics;
 if (data.custom3Metrics && data.custom3Metrics.total > app.custom3Metrics.total) app.custom3Metrics = data.custom3Metrics;
-if (data.saturdayMetrics && data.saturdayMetrics.total > (app.saturdayMetrics||{}).total) app.saturdayMetrics = data.saturdayMetrics;
 saveData();
 updateStats();
 showSuccess('Imported ' + data.raceHistory.length + ' races successfully!');
@@ -1172,12 +1120,11 @@ event.target.value = '';
 // § PARSE — form guide parser, speed map parser, race card text
 // ═══════════════════════════════════════════════════════════════
 app.switchModel = function(modelType, skipSave) {
-if (['base','custom','custom2','custom3','saturday','lab'].indexOf(modelType) === -1) return;
+if (['base','custom','custom2','custom3','lab'].indexOf(modelType) === -1) return;
 app.activeModel = modelType;
 if (modelType === 'custom') app.W = app.customWeights;
 else if (modelType === 'custom2') app.W = app.custom2Weights;
 else if (modelType === 'custom3') app.W = app.custom3Weights;
-else if (modelType === 'saturday') app.W = app.saturdayWeights;
 else if (modelType === 'lab')     app.W = app.labWeights || app.baseWeights;
 else app.W = app.baseWeights;
 // Enforce learningObjective — belt-and-braces in case localStorage loaded old data
@@ -1198,60 +1145,43 @@ var btns = {
 base:     document.getElementById('baseModelBtn'),
 custom:   document.getElementById('customModelBtn'),
 custom2:  document.getElementById('custom2ModelBtn'),
-custom3:  document.getElementById('custom3ModelBtn'),
-saturday: document.getElementById('saturdayModelBtn')
+custom3:  document.getElementById('custom3ModelBtn')
 };
 var dimColors = {
 base:     'linear-gradient(135deg,#065f46,#047857)',
 custom:   'linear-gradient(135deg,#4c1d95,#6d28d9)',
 custom2:  'linear-gradient(135deg,#78350f,#b45309)',
-custom3:  'linear-gradient(135deg,#164e63,#0e7490)',
-saturday: 'linear-gradient(135deg,#4c0f0f,#7f1d1d)'
+custom3:  'linear-gradient(135deg,#164e63,#0e7490)'
 };
 var activeColors = {
 base:     'linear-gradient(135deg,#059669,#10b981)',
 custom:   'linear-gradient(135deg,#7c3aed,#a855f7)',
 custom2:  'linear-gradient(135deg,#b45309,#f59e0b)',
-custom3:  'linear-gradient(135deg,#0e7490,#06b6d4)',
-saturday: 'linear-gradient(135deg,#b91c1c,#ef4444)'
+custom3:  'linear-gradient(135deg,#0e7490,#06b6d4)'
 };
 var statusColors = {
 base:     'var(--accent-green)',
 custom:   'var(--accent-purple)',
 custom2:  'var(--accent-gold)',
-custom3:  'var(--accent-blue)',
-saturday: '#fca5a5'
+custom3:  'var(--accent-blue)'
 };
 var statusLabels = {
 base:     '[brain] Active: BasePredictor (Self-Learning AI)',
 custom:   '[' + app.getModelName('custom') + '] Active: ' + app.getModelName('custom') + ' (Custom Weights)',
 custom2:  '[' + app.getModelName('custom2') + '] Active: ' + app.getModelName('custom2') + ' (Custom Weights)',
-custom3:  '[' + app.getModelName('custom3') + '] Active: ' + app.getModelName('custom3') + ' (Custom Weights)',
-saturday: '[horse] Active: Saturday Model (Saturday-Only Learning)'
+custom3:  '[' + app.getModelName('custom3') + '] Active: ' + app.getModelName('custom3') + ' (Custom Weights)'
 };
 var badgeLabels = {
 base:     '[brain] BasePredictor',
 custom:   '[' + app.getModelName('custom') + '] ' + app.getModelName('custom'),
 custom2:  '[' + app.getModelName('custom2') + '] ' + app.getModelName('custom2'),
-custom3:  '[' + app.getModelName('custom3') + '] ' + app.getModelName('custom3'),
-saturday: '[horse] Saturday'
+custom3:  '[' + app.getModelName('custom3') + '] ' + app.getModelName('custom3')
 };
-// Show/hide Saturday panel in the race card area
-var satPanel = document.getElementById('saturdayPanel');
-if (satPanel) satPanel.style.display = modelType === 'saturday' ? 'block' : 'none';
-// Show AUTO badge if today is Saturday
-var satTag = document.getElementById('satAutoTag');
-if (satTag) satTag.style.display = (modelType === 'saturday' && new Date().getDay() === 6) ? 'inline' : 'none';
 // Update race card title
 var rcTitle = document.getElementById('raceCardTitle');
 var rcSub = document.getElementById('raceCardSubtitle');
-if (modelType === 'saturday') {
-if (rcTitle) rcTitle.style.color = '#fca5a5';
-if (rcSub) rcSub.textContent = 'Saturday mode -- using Saturday-only weights';
-} else {
 if (rcTitle) rcTitle.style.color = 'var(--accent-green)';
 if (rcSub) rcSub.textContent = 'Paste race card text - all 4 models predict, enter result immediately';
-}
 var badgeBgs = {
 base:    'linear-gradient(135deg,#059669,#10b981)',
 custom:  'linear-gradient(135deg,#7c3aed,#a855f7)',
@@ -1287,11 +1217,11 @@ cardBadge.style.background = badgeBgs[modelType];
 cardBadge.style.color = modelType === 'custom2' ? '#000' : 'white';
 }
 if (!skipSave) {
-if (modelType !== 'saturday') localStorage.setItem('horseLastWeekdayModel', modelType);
+localStorage.setItem('horseLastWeekdayModel', modelType);
 saveData();
-var names2 = { base: app.getModelName('base'), custom: app.getModelName('custom'), custom2: app.getModelName('custom2'), custom3: app.getModelName('custom3'), saturday: app.getModelName('saturday') };
+var names2 = { base: app.getModelName('base'), custom: app.getModelName('custom'), custom2: app.getModelName('custom2'), custom3: app.getModelName('custom3') };
 addLog('switch', 'Switched to ' + (names2[modelType] || modelType), '');
-if (modelType !== 'saturday') showSuccess('Switched to ' + (names2[modelType] || modelType));
+showSuccess('Switched to ' + (names2[modelType] || modelType));
 }
 };
 app.applyPastedWeights = function() {
@@ -1399,14 +1329,12 @@ app.rebuildWeightInputs = function() {
 var contentEl = document.getElementById('weightEditorContent');
 var activeWeights = app.activeModel === 'custom2'  ? app.custom2Weights  :
 app.activeModel === 'custom3'  ? app.custom3Weights  :
-app.activeModel === 'saturday' ? app.saturdayWeights :
 app.activeModel === 'base'     ? app.baseWeights     : app.customWeights;
 // Philosophy banner — shows model objective and key emphasis
 var philosophyBanners = {
   custom:   { label: '🔮 Trifecta', desc: 'Optimises for exact order 1st/2nd/3rd · High: form, lastMargin, sectional, momentum · Focus: precise ranking', color: '#a855f7' },
   custom2:  { label: '⚡ Top-2 Hunter', desc: 'Optimises for Top-2 placement (1st or 2nd) · High: odds value, jockey, class · Low: form, consistency · objective: top2', color: '#f59e0b' },
   custom3:  { label: '🎯 Place Finder', desc: 'Optimises for Top-3 placement · High: careerPlace, consistency, secondUpForm · Low: odds', color: '#06b6d4' },
-  saturday: { label: '🏇 Saturday', desc: 'Saturday-only model · learns from weekend races only', color: '#fca5a5' },
   base:     { label: '🧠 BasePredictor', desc: 'Self-learning AI · blends all specialist signals after each race', color: '#10b981' }
 };
 var pb = philosophyBanners[app.activeModel];
@@ -1485,7 +1413,7 @@ modal.style.display = 'block';
 };
 
 app.getModelName = function(slot) {
-var defaults = { custom: 'Kimi', custom2: 'Grok', custom3: 'GPT', base: 'BasePredictor', saturday: 'Saturday' };
+var defaults = { custom: 'Kimi', custom2: 'Grok', custom3: 'GPT', base: 'BasePredictor' };
 return (app.customModelNames && app.customModelNames[slot]) || defaults[slot] || slot;
 };
 
@@ -1514,7 +1442,6 @@ if (statusEl) statusEl.style.display = 'none';
 app.saveCustomWeights = function() {
 var targetWeights = app.activeModel === 'custom2'  ? app.custom2Weights  :
 app.activeModel === 'custom3'  ? app.custom3Weights  :
-app.activeModel === 'saturday' ? app.saturdayWeights :
 app.activeModel === 'base'     ? app.baseWeights     : app.customWeights;
 var warnings = [];
 for (var key in targetWeights) {
@@ -1570,8 +1497,6 @@ if (app.activeModel === 'custom') {
 } else if (app.activeModel === 'custom3') {
   app.custom3Weights = app.sanitizeWeights(app.getFactoryWeights('custom3'));
   app.W = app.custom3Weights;
-} else if (app.activeModel === 'saturday') {
-  app.saturdayWeights = Object.assign({}, app.defaultWeights); app.W = app.saturdayWeights;
 } else {
   app.customWeights = Object.assign({}, app.baseWeights); app.W = app.customWeights;
 }
@@ -1587,8 +1512,7 @@ var models = [
 { key: 'base',     label: '[brain] BasePredictor', color: '#10b981', metrics: app.baseMetrics },
 { key: 'custom',   label: '🔮 ' + app.getModelName('custom'),   color: '#a855f7', metrics: app.customMetrics },
 { key: 'custom2',  label: '⚡ ' + app.getModelName('custom2'),  color: '#f59e0b', metrics: app.custom2Metrics },
-{ key: 'custom3',  label: '🎯 ' + app.getModelName('custom3'),  color: '#06b6d4', metrics: app.custom3Metrics },
-{ key: 'saturday', label: '[horse] Saturday',      color: '#fca5a5', metrics: app.saturdayMetrics }
+{ key: 'custom3',  label: '🎯 ' + app.getModelName('custom3'),  color: '#06b6d4', metrics: app.custom3Metrics }
 ];
 var anyData = models.some(function(m) { return m.metrics.total > 0; });
 if (!anyData) return;
@@ -4331,7 +4255,7 @@ date.textContent = new Date(pending.savedAt).toLocaleString();
 header.appendChild(title);
 header.appendChild(date);
 item.appendChild(header);
-var modelBadgeColors = { base:'#059669', custom:'#7c3aed', custom2:'#b45309', custom3:'#0e7490', race_mode:'#6366f1', saturday:'#ef4444' };
+var modelBadgeColors = { base:'#059669', custom:'#7c3aed', custom2:'#b45309', custom3:'#0e7490', race_mode:'#6366f1' };
 var savedModel = pending.model || 'base';
 var badgeColor = modelBadgeColors[savedModel] || '#475569';
 var badgeLabel = (pending.modelIcon || '🏇') + ' ' + (pending.modelName || savedModel);
@@ -5108,7 +5032,7 @@ save:     '#6ee7b7', error:    '#f87171', info:     '#94a3b8'
 function addLog(type, message, detail) {
 var now = new Date();
 var ts = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
-var modelNames = { base:'Base', custom:app.getModelName('custom'), custom2:app.getModelName('custom2'), custom3:app.getModelName('custom3'), saturday:app.getModelName('saturday') };
+var modelNames = { base:'Base', custom:app.getModelName('custom'), custom2:app.getModelName('custom2'), custom3:app.getModelName('custom3') };
 var entry = {
 ts: ts,
 type: type,
@@ -7538,7 +7462,6 @@ app.loadPending = function(id) {
     var modelW = pending.model === 'custom'  ? app.customWeights  :
                  pending.model === 'custom2' ? app.custom2Weights :
                  pending.model === 'custom3' ? app.custom3Weights :
-                 pending.model === 'saturday'? app.saturdayWeights :
                  app.baseWeights;
     if (modelW) app.W = modelW;
   }
@@ -7616,8 +7539,7 @@ app.recordWinner = function() {
 
   var metrics = app.activeModel === 'custom'  ? app.customMetrics  :
                 app.activeModel === 'custom2' ? app.custom2Metrics :
-                app.activeModel === 'custom3' ? app.custom3Metrics :
-                app.activeModel === 'saturday'? app.saturdayMetrics: app.baseMetrics;
+                app.activeModel === 'custom3' ? app.custom3Metrics : app.baseMetrics;
   metrics.total++; if (isCorrect) metrics.correct++; if (top2) metrics.top2++; if (top3) metrics.top3++;
 
   var _cf = (app.horses||[]).map(function(h){ return {name:h.name,odds:h.odds,barrier:h.barrier,weight:h.weight,jockey:h.jockey||'',trainer:h.trainer||'',scratched:h.scratched,score:h.score||0,winScore:h.winScore||0,factorContributions:h.factorContributions?JSON.parse(JSON.stringify(h.factorContributions)):{}}; });
@@ -8149,99 +8071,6 @@ app.acceptCounterfactualNudge = function(suggestedWJson) {
   showSuccess('Base nudged toward AI-suggested weights (' + nudged.length + ' factors)');
 };
 
-// Exit Saturday mode - return to whichever weekday model was last used
-app.exitSaturdayMode = function() {
-var lastWeekday = localStorage.getItem('horseLastWeekdayModel') || 'base';
-app.switchModel(lastWeekday, false);
-showSuccess('Switched back to ' + lastWeekday + ' model');
-};
-
-// ── Saturday Log Import ──
-app.importSaturdayLog = function(event) {
-var files = Array.from(event.target.files);
-if (!files.length) return;
-var statusEl = document.getElementById('satLogStatus');
-if (statusEl) statusEl.textContent = 'Reading ' + files.length + ' file(s)...';
-var allResults = [];
-var processed = 0;
-files.forEach(function(file) {
-var reader = new FileReader();
-reader.onload = function(e) {
-var text = e.target.result;
-var results = parseSaturdayLogText(text);
-allResults = allResults.concat(results);
-processed++;
-if (processed === files.length) { applySaturdayLogLearning(allResults); event.target.value = ''; }
-};
-reader.readAsText(file);
-});
-};
-function parseSaturdayLogText(text) {
-var results = [];
-var lines = text.split('\n');
-for (var i = 0; i < lines.length; i++) {
-var line = lines[i];
-if (line.indexOf('[RESULT]') === -1 && line.indexOf('[result]') === -1) continue;
-var top3Match = line.match(/Actual:\s*([^\/\n|,]+)(?:\/([^\/\n|,]+))?(?:\/([^\/\n|]+))?/i);
-var predMatch = line.match(/Predicted:\s*([^\/\n|,]+)(?:\/([^\/\n|,]+))?(?:\/([^\/\n|]+))?/i);
-if (!top3Match) continue;
-var r = {
-actual1: top3Match[1].trim(),
-actual2: top3Match[2] ? top3Match[2].trim() : null,
-actual3: top3Match[3] ? top3Match[3].replace(/\|.*/, '').trim() : null,
-predicted1: predMatch ? predMatch[1].trim() : null,
-predicted2: predMatch && predMatch[2] ? predMatch[2].trim() : null,
-predicted3: predMatch && predMatch[3] ? predMatch[3].replace(/\|.*/, '').trim() : null,
-isWin: line.indexOf('WIN correct') !== -1,
-isTop3: line.indexOf('Top-3') !== -1 || line.indexOf('Top3') !== -1,
-hits: 0
-};
-var actuals = [r.actual1, r.actual2, r.actual3].filter(Boolean);
-var preds = [r.predicted1, r.predicted2, r.predicted3].filter(Boolean);
-preds.forEach(function(p) { if (actuals.indexOf(p) !== -1) r.hits++; });
-results.push(r);
-}
-return results;
-}
-function applySaturdayLogLearning(results) {
-var statusEl = document.getElementById('satLogStatus');
-if (!results.length) {
-if (statusEl) statusEl.textContent = 'No result entries found. Make sure you upload exported activity log .txt files.';
-return;
-}
-// Reset Saturday weights fresh from defaults
-app.saturdayWeights = Object.assign({}, app.defaultWeights);
-var wins = 0, top3s = 0, total = results.length;
-results.forEach(function(r) {
-if (r.isWin) {
-wins++;
-// Saturday winners tend to reward track record and form over raw odds
-app.saturdayWeights.trackWin   = Math.min(220, app.saturdayWeights.trackWin   * 1.02);
-app.saturdayWeights.form1      = Math.min(150, app.saturdayWeights.form1      * 1.015);
-app.saturdayWeights.odds       = Math.min(550, app.saturdayWeights.odds       * 1.01);
-} else {
-// Penalise over-reliance on short odds on Saturdays (more competitive fields)
-app.saturdayWeights.odds       = Math.max(200, app.saturdayWeights.odds       * 0.988);
-app.saturdayWeights.trackWin   = Math.min(220, app.saturdayWeights.trackWin   * 1.008);
-app.saturdayWeights.classChange = Math.min(120, app.saturdayWeights.classChange * 1.008);
-}
-if (r.hits >= 2) top3s++;
-});
-// Update metrics counters with seeded data
-app.saturdayMetrics.total   = total;
-app.saturdayMetrics.correct = wins;
-app.saturdayMetrics.top3    = top3s;
-app.saturdayMetrics.top2    = results.filter(function(r) { return r.hits >= 2; }).length;
-if (app.activeModel === 'saturday') app.W = app.saturdayWeights;
-saveData();
-app.updateModelMetrics();
-var winPct  = total > 0 ? Math.round((wins/total)*100) : 0;
-var top3Pct = total > 0 ? Math.round((top3s/total)*100) : 0;
-addLog('learn', '[horse] Saturday model seeded: ' + total + ' races | ' + winPct + '% wins | ' + top3Pct + '% top-3', 'Weights adjusted based on Saturday race patterns. Odds weight: ' + Math.round(app.saturdayWeights.odds) + ', Track weight: ' + Math.round(app.saturdayWeights.trackWin));
-if (statusEl) statusEl.textContent = 'Seeded from ' + total + ' races | ' + wins + ' wins (' + winPct + '%) | ' + top3s + ' top-3 (' + top3Pct + '%)';
-showSuccess('Saturday model seeded from ' + total + ' log entries!');
-}
-
 function generateBatchSummary(session) {
 var races = session.races;
 var n = races.length;
@@ -8748,8 +8577,8 @@ panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
 app.buildMonitorReport = function(races) {
-var modelNames = { base:app.getModelName('base'), custom:app.getModelName('custom'), custom2:app.getModelName('custom2'), custom3:app.getModelName('custom3'), saturday:app.getModelName('saturday') };
-var modelColors = { base:'#10b981', custom:'#a855f7', custom2:'#f59e0b', custom3:'#06b6d4', saturday:'#fca5a5' };
+var modelNames = { base:app.getModelName('base'), custom:app.getModelName('custom'), custom2:app.getModelName('custom2'), custom3:app.getModelName('custom3') };
+var modelColors = { base:'#10b981', custom:'#a855f7', custom2:'#f59e0b', custom3:'#06b6d4' };
 var defW = app.defaultWeights;
 var weightLabels = {
 odds:'Odds', form1:'Form (1st)', form2:'Form (2nd)', formConsistency:'Consistency',
@@ -8843,8 +8672,7 @@ var weightSets = {
 base:     { weights: app.baseWeights,     label: 'BasePredictor', color: '#10b981' },
 custom:   { weights: app.customWeights,   label: app.getModelName('custom'),   color: '#a855f7' },
 custom2:  { weights: app.custom2Weights,  label: app.getModelName('custom2'),  color: '#f59e0b' },
-custom3:  { weights: app.custom3Weights,  label: app.getModelName('custom3'),  color: '#06b6d4' },
-saturday: { weights: app.saturdayWeights, label: 'Saturday', color: '#fca5a5' }
+custom3:  { weights: app.custom3Weights,  label: app.getModelName('custom3'),  color: '#06b6d4' }
 };
 // Only show models that raced today, plus always show the active model
 var modelsToShow = {};
@@ -9121,7 +8949,7 @@ else panel.classList.add('hidden');
 app.setHistoryFilter = function(filter) {
 app.historyFilter = filter;
 var filters = ['all', 'base', 'custom', 'custom2', 'custom3'];
-var ids     = ['hfAll', 'hfBase', 'hfCustom', 'hfCustom2', 'hfCustom3', 'hfSaturday'];
+var ids     = ['hfAll', 'hfBase', 'hfCustom', 'hfCustom2', 'hfCustom3'];
 var colors  = ['var(--accent-indigo)', 'var(--accent-green)', 'var(--accent-purple)', 'var(--accent-gold)', 'var(--accent-blue)', '#818cf8'];
 for (var i = 0; i < filters.length; i++) {
 var btn = document.getElementById(ids[i]);
@@ -9586,8 +9414,8 @@ function buildConsensusForRace(pendingGroup) {
   // pendingGroup = array of pending entries for the SAME race, different models
   if (!pendingGroup || pendingGroup.length === 0) return null;
   var modelCount = pendingGroup.length;
-  var modelNames = { base:app.getModelName('base'), custom:app.getModelName('custom'), custom2:app.getModelName('custom2'), custom3:app.getModelName('custom3'), saturday:app.getModelName('saturday') };
-  var modelColors = { base:'#10b981', custom:'#a855f7', custom2:'#f59e0b', custom3:'#06b6d4', saturday:'#fca5a5' };
+  var modelNames = { base:app.getModelName('base'), custom:app.getModelName('custom'), custom2:app.getModelName('custom2'), custom3:app.getModelName('custom3') };
+  var modelColors = { base:'#10b981', custom:'#a855f7', custom2:'#f59e0b', custom3:'#06b6d4' };
 
   // Gather all unique horses from all models
   var horseData = {};
@@ -9803,8 +9631,7 @@ function renderConsensusAdvisor() {
     { key: 'base',    label: 'Base',                        color: '#10b981' },
     { key: 'custom',  label: app.getModelName('custom'),    color: '#a855f7' },
     { key: 'custom2', label: app.getModelName('custom2'),   color: '#f59e0b' },
-    { key: 'custom3', label: app.getModelName('custom3'),   color: '#06b6d4' },
-    { key: 'saturday',label: 'Saturday',                    color: '#fca5a5' }
+    { key: 'custom3', label: app.getModelName('custom3'),   color: '#06b6d4' }
   ];
   var submittedKeys = group.map(function(p){ return p.model; });
   var totalModels = ALL_MODELS.length;
@@ -9872,8 +9699,8 @@ function renderConsensusAdvisor() {
     html += '<div style="display:flex; gap:3px; align-items:center;">';
     // Show which models picked this horse in top 3
     h.models.forEach(function(mv) {
-      var modelColors2 = { base:'#10b981', custom:'#a855f7', custom2:'#f59e0b', custom3:'#06b6d4', saturday:'#fca5a5' };
-      var modelAbbr = { base:'B', custom:'Ki', custom2:'Gr', custom3:'GP', saturday:'Sa' };
+      var modelColors2 = { base:'#10b981', custom:'#a855f7', custom2:'#f59e0b', custom3:'#06b6d4' };
+      var modelAbbr = { base:'B', custom:'Ki', custom2:'Gr', custom3:'GP' };
       if (mv.rank <= 3) {
         html += '<span style="background:' + (modelColors2[mv.model]||'#94a3b8') + '33; color:' + (modelColors2[mv.model]||'#94a3b8') + '; border-radius:4px; padding:1px 5px; font-size:9px; font-weight:700;">' + (modelAbbr[mv.model]||mv.model[0].toUpperCase()) + mv.rank + '</span>';
       }
@@ -10809,7 +10636,6 @@ app.custom2Weights = Object.assign({}, app.defaultWeights, {
     learningObjective: 'top2'
   });
 app.custom3Weights = app.getFactoryWeights('custom3');
-app.saturdayWeights = Object.assign({}, app.defaultWeights);
 // Reset venue profiles
 app.venueProfiles = {};
 localStorage.removeItem('horseVenueProfiles');
@@ -10832,7 +10658,6 @@ sectionalFail: 0, weatherRailFail: 0
 if (app.activeModel === 'custom') app.W = app.customWeights;
 else if (app.activeModel === 'custom2') app.W = app.custom2Weights;
 else if (app.activeModel === 'custom3') app.W = app.custom3Weights;
-else if (app.activeModel === 'saturday') app.W = app.saturdayWeights;
 else { app.W = app.baseWeights; app.activeModel = 'base'; }
 saveData();
 updateStats();
@@ -10874,7 +10699,6 @@ app.custom3Weights = app.getFactoryWeights('custom3');
 app.W = app.baseWeights;
 app.activeModel = 'base';
 app.baseMetrics    = { correct: 0, total: 0, top2: 0, top3: 0 };
-app.saturdayMetrics = { correct: 0, total: 0, top2: 0, top3: 0 };
 app.customMetrics  = { correct: 0, total: 0, top2: 0, top3: 0 };
 app.custom2Metrics = { correct: 0, total: 0, top2: 0, top3: 0 };
 app.custom3Metrics = { correct: 0, total: 0, top2: 0, top3: 0 };
@@ -10903,10 +10727,10 @@ if (!confirm(msg)) return;
 var keysToWipe = [
 'horseRaceHistoryV2','horsePendingRacesV2',
 'horseModelWeightsV2','horseCustomWeightsV3','horseCustom2WeightsV3',
-'horseCustom3WeightsV3','horseSaturdayWeightsV3',
+'horseCustom3WeightsV3',
 'horseActiveModel','horseBaseMetrics','horseCustomMetrics',
 'horseCustom2Metrics','horseCustom3Metrics',
-'horseSaturdayMetrics','horseVenueProfiles','horseActivityLog',
+'horseVenueProfiles','horseActivityLog',
 'horseFactorStatsV2','horseJockeyStatsV2','horseTrainerStatsV2',
 'horseBettingHistoryV2','horseAIAuditCount'
 ];
@@ -10919,10 +10743,8 @@ app.baseWeights    = app.sanitizeWeights(Object.assign({}, app.defaultWeights));
 app.customWeights  = app.sanitizeWeights(app.getFactoryWeights('custom'));
 app.custom2Weights = app.sanitizeWeights(app.getFactoryWeights('custom2'));
 app.custom3Weights = app.sanitizeWeights(app.getFactoryWeights('custom3'));
-app.saturdayWeights = app.sanitizeWeights(Object.assign({}, app.defaultWeights));
 app.baseMetrics = blankMetrics(); app.customMetrics = blankMetrics();
 app.custom2Metrics = blankMetrics(); app.custom3Metrics = blankMetrics();
-app.saturdayMetrics = blankMetrics();
 app.activeModel = 'base';
 app.W = app.baseWeights;
 saveData();
@@ -11304,7 +11126,6 @@ for (var vi = 0; vi < app.raceHistory.length; vi++) {
 if      (app.activeModel === 'custom')   app.W = app.customWeights;
 else if (app.activeModel === 'custom2')  app.W = app.custom2Weights;
 else if (app.activeModel === 'custom3')  app.W = app.custom3Weights;
-else if (app.activeModel === 'saturday') app.W = app.saturdayWeights;
 else                                     app.W = app.baseWeights;
 
 saveData();
