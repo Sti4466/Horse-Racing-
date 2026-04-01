@@ -837,6 +837,11 @@ app.sanitizeWeights(app.custom3Weights);
 }
 
 var savedActiveModel = localStorage.getItem('horseActiveModel');
+// Migrate: if user had 'saturday' saved, fall back to last weekday model or 'base'
+if (savedActiveModel === 'saturday') {
+  savedActiveModel = localStorage.getItem('horseLastWeekdayModel') || 'base';
+  localStorage.setItem('horseActiveModel', savedActiveModel);
+}
 if (savedActiveModel && ['base','custom','custom2','custom3'].indexOf(savedActiveModel) !== -1) {
 app.activeModel = savedActiveModel;
 }
