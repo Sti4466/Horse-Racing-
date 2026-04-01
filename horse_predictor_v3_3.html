@@ -9057,9 +9057,6 @@ h.num + '. ' + escapeHtml(h.name) +
 var sel = document.getElementById('betHorse');
 if (sel) sel.innerHTML = optionsHTML;
 }
-app.updateBetInterface = function() {
-  app._showKellyHint();
-};
 
 // Kelly hint: shows recommended stake for win/each-way bets
 app._showKellyHint = function() {
@@ -9151,8 +9148,8 @@ var typeLabelsMap = { win: 'Win', place: 'Place', eachway: 'E/W', 'each-way': 'E
 var typeLabel = typeLabelsMap[b.type] || b.type.charAt(0).toUpperCase() + b.type.slice(1);
 if (b.fromConsensus) typeLabel = '[C] ' + typeLabel;
 var potentialWin = b.odds > 0 ? '$' + (b.stake * b.odds).toFixed(2) : '?';
-div.innerHTML = '<span class="bet-info"><strong>' + escapeHtml(b.horse) + '</strong> ' + typeLabel + ' $' + b.stake.toFixed(2) + (b.odds > 0 ? ' @ $' + b.odds.toFixed(2) + ' \u2192 ' + potentialWin : '') + '</span>' +
-'<button class="bet-remove" data-id="' + b.id + '">\u2715</button>';
+div.innerHTML = '<span class="bet-info"><strong>' + escapeHtml(b.horse) + '</strong> ' + typeLabel + ' $' + b.stake.toFixed(2) + (b.odds > 0 ? ' @ $' + b.odds.toFixed(2) + ' → ' + potentialWin : '') + '</span>' +
+'<button class="bet-remove" data-id="' + b.id + '">✕</button>';
 div.querySelector('.bet-remove').onclick = (function(id) { return function() { app.removeBet(id); }; })(b.id);
 container.appendChild(div);
 }
@@ -9235,9 +9232,9 @@ var r = results[j];
 totalProfit += r.profit;
 var typeLabelsH = { win: 'Win', place: 'Place', eachway: 'E/W', 'each-way': 'E/W' };
 var typeLabel = typeLabelsH[r.type] || r.type.charAt(0).toUpperCase() + r.type.slice(1);
-if (r.outcome === 'win') betSummaries.push('\u2705 ' + r.horse + ' ' + typeLabel + ' +$' + r.profit.toFixed(2));
-else if (r.outcome === 'place') betSummaries.push('\u26a0\ufe0f ' + r.horse + ' ' + typeLabel + ' ' + (r.profit >= 0 ? '+' : '') + '$' + r.profit.toFixed(2));
-else betSummaries.push('\u274c ' + r.horse + ' ' + typeLabel + ' -$' + Math.abs(r.profit).toFixed(2));
+if (r.outcome === 'win') betSummaries.push('✅ ' + r.horse + ' ' + typeLabel + ' +$' + r.profit.toFixed(2));
+else if (r.outcome === 'place') betSummaries.push('⚠️ ' + r.horse + ' ' + typeLabel + ' ' + (r.profit >= 0 ? '+' : '') + '$' + r.profit.toFixed(2));
+else betSummaries.push('❌ ' + r.horse + ' ' + typeLabel + ' -$' + Math.abs(r.profit).toFixed(2));
 }
 return { results: results, totalProfit: totalProfit, summaries: betSummaries };
 }
@@ -9712,7 +9709,7 @@ app.quickAddBet = function(betType, horses) {
   app.activeBets.push(bet);
   renderActiveBets();
   var typeLabels = { win: 'Win', place: 'Place', eachway: 'Each Way', 'each-way': 'Each Way' };
-  showSuccess('\u{1F3C7} ' + (typeLabels[betType] || betType) + ' added: ' + horseName);
+  showSuccess('🏇 ' + (typeLabels[betType] || betType) + ' added: ' + horseName);
 };
 
 // Clear consensus: removes all pending predictions for the CURRENT race key
