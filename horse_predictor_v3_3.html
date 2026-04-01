@@ -10617,7 +10617,7 @@ app.openManualAudit = function() {
 };
 
 app.resetWeightsOnly = function() {
-if (!confirm('Reset ALL model weights back to factory defaults?\n\nThis resets: BasePredictor, Kimi, Grok, GPT, Saturday weights + venue profiles + factor stats.\n\nYour race history and jockey/trainer stats are KEPT so you can Relearn from History afterwards.\n\nContinue?')) return;
+if (!confirm('Reset ALL model weights back to factory defaults?\n\nThis resets: BasePredictor, Kimi, Grok, GPT weights + venue profiles + factor stats.\n\nYour race history and jockey/trainer stats are KEPT so you can Relearn from History afterwards.\n\nContinue?')) return;
 // Reset all model weights — v3.2 divergent factory defaults
 app.baseWeights    = Object.assign({}, app.defaultWeights);
 app.customWeights  = Object.assign({}, app.defaultWeights, {
@@ -10720,7 +10720,7 @@ function blankMetrics() { return { correct: 0, total: 0, top2: 0, top3: 0 }; }
 app.safeReset = function() {
 var msg = '\u{1F6E1} SAFE RESET\n\n';
 msg += 'This will:\n';
-msg += '  \u2713 Reset ALL 6 model weights to factory defaults\n';
+msg += '  \u2713 Reset ALL 4 model weights to factory defaults\n';
 msg += '  \u2713 Clear all race history, pending races, bets\n';
 msg += '  \u2713 Clear jockey/trainer stats & venue profiles\n';
 msg += '  \u2713 Clear factor stats & activity log\n';
@@ -10758,7 +10758,7 @@ app.updateModelMetrics();
 document.getElementById('statsBar').classList.add('hidden');
 if (!document.getElementById('historyPanel').classList.contains('hidden')) renderHistory();
 if (!document.getElementById('pendingPanel').classList.contains('hidden')) renderPending();
-showSuccess('Safe Reset complete — all 6 models at factory defaults. Ready to learn from scratch.');
+showSuccess('Safe Reset complete — all 4 models at factory defaults. Ready to learn from scratch.');
 addLog('info', 'Safe Reset — factory weights, clean slate', 'Rating weight: ' + app.baseWeights.rating + ' (correct scale 1.2)');
 };
 app.resetFactorStats = function() {
