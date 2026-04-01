@@ -15,7 +15,7 @@
 <p class="subtitle">24-factor ML . Log-Odds . Normalized Scoring . Asymmetric Learning . Top-3 Optimized (70/30)</p>
 <div class="card" style="border:2px solid var(--accent-purple); background:rgba(168,85,247,0.05); margin-bottom:16px;">
 <h3 style="font-size:18px; margin-bottom:4px; font-weight:700; color:var(--accent-purple);">[GPT] AI Predictor Battle</h3>
-<p style="color:var(--text-muted); font-size:12px; margin-bottom:12px;">🎰 Trifecta Box · 🎯 Quinella · Win is a bonus · 5/10 = profitable</p>
+<p style="color:var(--text-muted); font-size:12px; margin-bottom:12px;">🏇 Win · 🎯 Place · 🎰 Each-Way · 5/10 = profitable</p>
 <div style="display:flex; gap:8px; margin-bottom:8px;">
 <button id="baseModelBtn" class="btn" style="flex:1; margin-top:0; background:linear-gradient(135deg,#059669,#10b981);" onclick="app.switchModel('base')">
             [brain] BasePredictor<br><span style="font-size:11px; opacity:0.8;">Self-Learning AI</span>
@@ -43,16 +43,16 @@
 <div id="leaderboardRows"></div>
 <div style="margin-top:8px; padding-top:8px; border-top:1px solid var(--border); font-size:11px; color:var(--text-muted);">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
-<span>Target: <span style="color:#a855f7; font-weight:700;">70% Trifecta Box</span></span>
-<span style="color:#94a3b8; font-size:10px;">$6 box · 5/10 = +$190 profit · 50% hit rate</span>
+<span>Target: <span style="color:#a855f7; font-weight:700;">70% Top-3 Frame</span></span>
+<span style="color:#94a3b8; font-size:10px;">Place pays 1st, 2nd, 3rd · 50% hit rate = profitable</span>
 </div>
 </div>
 </div>
 </div>
 <div id="toast" class="toast" role="alert"></div>
 <div id="statsBar" class="stats-bar hidden">
-<div class="stat-box" style="border-color:#a855f7;"><div class="big" id="sTop3" style="color:#a855f7;">0%</div><div class="small">Trifecta Box</div></div>
-<div class="stat-box" style="border-color:#3b82f6;"><div class="big" id="sTop2" style="color:#3b82f6;">0%</div><div class="small">Quinella</div></div>
+<div class="stat-box" style="border-color:#a855f7;"><div class="big" id="sTop3" style="color:#a855f7;">0%</div><div class="small">Top-3 Frame</div></div>
+<div class="stat-box" style="border-color:#3b82f6;"><div class="big" id="sTop2" style="color:#3b82f6;">0%</div><div class="small">Top-2 Hit</div></div>
 <div class="stat-box"><div class="big" id="sTotal">0</div><div class="small">Total</div></div>
 <div class="stat-box yellow"><div class="big" id="sPct">0%</div><div class="small">Win%</div></div>
 <div class="stat-box green"><div class="big" id="sCorrect">0</div><div class="small">Wins</div></div>
@@ -242,15 +242,10 @@ Expected format:
   <div class="bet-row">
     <div style="flex:1; min-width:120px;">
       <label style="font-size:11px; color:var(--text-secondary); display:block; margin-bottom:3px;">Bet Type</label>
-      <select id="betType" onchange="app.updateBetInterface()" style="width:100%; background:var(--bg-input); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); font-family:'Outfit',sans-serif; font-size:13px; padding:8px 10px;">
+      <select id="betType" onchange="app._showKellyHint()" style="width:100%; background:var(--bg-input); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); font-family:'Outfit',sans-serif; font-size:13px; padding:8px 10px;">
         <option value="win">Win</option>
         <option value="place">Place</option>
         <option value="eachway">Each Way</option>
-        <option value="quinella">Quinella</option>
-        <option value="exacta">Exacta</option>
-        <option value="trifecta">Trifecta</option>
-        <option value="boxed_trifecta">Boxed Trifecta</option>
-        <option value="first4">First 4</option>
       </select>
     </div>
     <div style="flex:0 0 90px;">
@@ -263,25 +258,6 @@ Expected format:
     <div style="flex:1;">
       <label style="font-size:11px; color:var(--text-secondary); display:block; margin-bottom:3px;">Horse</label>
       <select id="betHorse" onchange="app._showKellyHint()" style="width:100%; background:var(--bg-input); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); font-family:'Outfit',sans-serif; font-size:13px; padding:8px 10px;"><option value="">-- Pick horse --</option></select>
-    </div>
-  </div>
-  <!-- Multi horse select (quinella/trifecta etc) -->
-  <div id="multiHorseSelect" class="bet-row hidden" style="margin-top:6px; flex-direction:column; gap:6px;">
-    <div>
-      <label style="font-size:11px; color:var(--text-secondary); display:block; margin-bottom:3px;">Horse 1</label>
-      <select id="betHorse1" style="width:100%; background:var(--bg-input); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); font-family:'Outfit',sans-serif; font-size:13px; padding:8px 10px;"><option value="">-- Pick horse --</option></select>
-    </div>
-    <div>
-      <label style="font-size:11px; color:var(--text-secondary); display:block; margin-bottom:3px;">Horse 2</label>
-      <select id="betHorse2" style="width:100%; background:var(--bg-input); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); font-family:'Outfit',sans-serif; font-size:13px; padding:8px 10px;"><option value="">-- Pick horse --</option></select>
-    </div>
-    <div id="betHorse3Wrap" class="hidden">
-      <label style="font-size:11px; color:var(--text-secondary); display:block; margin-bottom:3px;">Horse 3</label>
-      <select id="betHorse3" style="width:100%; background:var(--bg-input); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); font-family:'Outfit',sans-serif; font-size:13px; padding:8px 10px;"><option value="">-- Pick horse --</option></select>
-    </div>
-    <div id="betHorse4Wrap" class="hidden">
-      <label style="font-size:11px; color:var(--text-secondary); display:block; margin-bottom:3px;">Horse 4</label>
-      <select id="betHorse4" style="width:100%; background:var(--bg-input); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); font-family:'Outfit',sans-serif; font-size:13px; padding:8px 10px;"><option value="">-- Pick horse --</option></select>
     </div>
   </div>
   <button class="btn btn-save" onclick="app.addBet()" style="margin-top:8px;">+ Add Bet</button>
@@ -7233,47 +7209,52 @@ function renderInlineBetting(results) {
   var top1 = horses[0], top2 = horses[1], top3 = horses[2];
   if (!top1) { panel.innerHTML = ''; return; }
 
-  // ── Build top-3 bet recommendations ──────────────────────────────────────
+  // ── Build simple bet recommendations ─────────────────────────────────────
   var bets = [];
   var _bankroll = 200;
 
-  // 1. Boxed Trifecta
-  if (top3) {
-    var tc = Math.round((top1.confidencePct + top2.confidencePct + top3.confidencePct) / 3);
-    tc = Math.min(88, tc + (top1.tripleConvergence ? 12 : 0));
-    bets.push({
-      rank:1, label:'🎰 Boxed Trifecta', type:'boxed_trifecta',
-      horses:[top1, top2, top3], confidence:tc,
-      stake: tc >= 60 ? 6 : tc >= 45 ? 4 : 2,
-      stakeNote: tc >= 60 ? 'Strong — $6 box' : tc >= 45 ? 'Moderate — $4 box' : 'Low — $2 box',
-      color: tc >= 55 ? '#a855f7' : tc >= 38 ? '#f59e0b' : '#ef4444'
-    });
-  }
-  // 2. Quinella
-  if (top2) {
-    var qc = Math.round(top1.confidencePct * 0.55 + top2.confidencePct * 0.40);
-    qc = Math.min(88, qc + (top1.tripleConvergence ? 10 : 0));
-    bets.push({
-      rank:2, label:'🎯 Quinella', type:'quinella',
-      horses:[top1, top2], confidence:qc,
-      stake: qc >= 60 ? 5 : qc >= 45 ? 3 : 2,
-      stakeNote: '$' + (qc >= 60 ? 5 : qc >= 45 ? 3 : 2) + ' quinella — stacks with trifecta',
-      color: qc >= 60 ? '#3b82f6' : qc >= 40 ? '#f59e0b' : '#ef4444'
-    });
-  }
-  // 3. Win / Each-Way
-  var wc = top1.confidencePct + (top1.top3Votes >= modelCount ? 10 : 0);
-  wc = Math.min(92, wc);
-  var isEW = top1.odds > 5.0;
-  var kellyK = getKellyLabel(wc, top1.odds, _bankroll);
+  // 1. Win / Each-Way on top horse
+  var wc1 = top1.confidencePct + (top1.top3Votes >= modelCount ? 10 : 0);
+  wc1 = Math.min(92, wc1);
+  var isEW1 = top1.odds > 5.0;
+  var kellyK1 = getKellyLabel(wc1, top1.odds, _bankroll);
   bets.push({
-    rank:3, label: isEW ? '🏇 Each-Way' : '🏇 Win',
-    type: isEW ? 'each-way' : 'win',
-    horses:[top1], confidence:wc,
-    stake: kellyK && kellyK.stake > 0 ? kellyK.stake : (wc >= 65 ? 15 : wc >= 50 ? 10 : 5),
-    stakeNote: kellyK && kellyK.stake > 0 ? 'Kelly: $' + kellyK.stake.toFixed(2) + ' (' + kellyK.fullKellyPct + '% of $' + _bankroll + ' bankroll)' : (isEW ? 'Win + place' : 'Win only'),
-    color: wc >= 65 ? '#10b981' : wc >= 45 ? '#f59e0b' : '#ef4444'
+    rank: 1, label: isEW1 ? '🏇 Each-Way' : '🏇 Win',
+    type: isEW1 ? 'each-way' : 'win',
+    horses: [top1], confidence: wc1,
+    stake: kellyK1 && kellyK1.stake > 0 ? kellyK1.stake : (wc1 >= 65 ? 15 : wc1 >= 50 ? 10 : 5),
+    stakeNote: kellyK1 && kellyK1.stake > 0 ? 'Kelly: $' + kellyK1.stake.toFixed(2) + ' (' + kellyK1.fullKellyPct + '% of $' + _bankroll + ' bankroll)' : (isEW1 ? 'Win + place' : 'Win only'),
+    color: wc1 >= 65 ? '#10b981' : wc1 >= 45 ? '#f59e0b' : '#ef4444'
   });
+
+  // 2. Place on the runner-up (if available)
+  if (top2) {
+    var pc = Math.round(top2.confidencePct * 0.85);
+    pc = Math.min(85, pc + (top2.agreePct >= 75 ? 8 : 0));
+    bets.push({
+      rank: 2, label: '🎯 Place',
+      type: 'place',
+      horses: [top2], confidence: pc,
+      stake: pc >= 55 ? 10 : pc >= 40 ? 7 : 5,
+      stakeNote: 'Place — pays if finishes 1st, 2nd or 3rd',
+      color: pc >= 60 ? '#3b82f6' : pc >= 40 ? '#f59e0b' : '#ef4444'
+    });
+  }
+
+  // 3. Each-Way on third horse as value play (if available)
+  if (top3) {
+    var vc = Math.round(top3.confidencePct * 0.75);
+    vc = Math.min(80, vc);
+    var isEW3 = (top3.odds || 0) > 4.0;
+    bets.push({
+      rank: 3, label: isEW3 ? '🎰 Each-Way (value)' : '🏇 Win (value)',
+      type: isEW3 ? 'each-way' : 'win',
+      horses: [top3], confidence: vc,
+      stake: vc >= 50 ? 5 : 3,
+      stakeNote: isEW3 ? 'Value each-way — pays place at good odds' : 'Value win — long shot play',
+      color: vc >= 50 ? '#a855f7' : vc >= 35 ? '#f59e0b' : '#ef4444'
+    });
+  }
 
   // ── Render ────────────────────────────────────────────────────────────────
   var gateColor = bets[0].confidence >= 55 ? '#10b981' : bets[0].confidence >= 38 ? '#f59e0b' : '#ef4444';
@@ -9073,38 +9054,11 @@ optionsHTML += '<option value="' + escapeHtml(h.name) + '">' +
 h.num + '. ' + escapeHtml(h.name) +
 (h.odds ? ' ($' + h.odds.toFixed(2) + ')' : '') + '</option>';
 }
-var selectors = ['betHorse', 'betHorse1', 'betHorse2', 'betHorse3', 'betHorse4'];
-for (var j = 0; j < selectors.length; j++) {
-var sel = document.getElementById(selectors[j]);
+var sel = document.getElementById('betHorse');
 if (sel) sel.innerHTML = optionsHTML;
 }
-}
 app.updateBetInterface = function() {
-if (!document.getElementById('betType')) return;
-var betType = document.getElementById('betType').value;
-var singleSelect = document.getElementById('singleHorseSelect');
-var multiSelect = document.getElementById('multiHorseSelect');
-var horse3 = document.getElementById('betHorse3Wrap');
-var horse4 = document.getElementById('betHorse4Wrap');
-var multiTypes = ['quinella','exacta','trifecta','boxed_trifecta','first4'];
-if (multiTypes.indexOf(betType) !== -1) {
-singleSelect.classList.add('hidden');
-multiSelect.classList.remove('hidden');
-if (betType === 'trifecta' || betType === 'boxed_trifecta') {
-if (horse3) horse3.classList.remove('hidden');
-if (horse4) horse4.classList.add('hidden');
-} else if (betType === 'first4') {
-if (horse3) horse3.classList.remove('hidden');
-if (horse4) horse4.classList.remove('hidden');
-} else {
-if (horse3) horse3.classList.add('hidden');
-if (horse4) horse4.classList.add('hidden');
-}
-} else {
-singleSelect.classList.remove('hidden');
-multiSelect.classList.add('hidden');
-}
-app._showKellyHint();
+  app._showKellyHint();
 };
 
 // Kelly hint: shows recommended stake for win/each-way bets
@@ -9144,32 +9098,6 @@ app.addBet = function() {
 var betType = document.getElementById('betType').value;
 var stake = parseFloat(document.getElementById('betStake').value);
 if (!stake || stake <= 0) { showError('Enter a stake amount!'); return; }
-var multiTypes = ['quinella','exacta','trifecta','boxed_trifecta','first4'];
-if (multiTypes.indexOf(betType) !== -1) {
-var horse1Name = document.getElementById('betHorse1').value;
-var horse2Name = document.getElementById('betHorse2').value;
-var horse3Name = (betType==='trifecta'||betType==='boxed_trifecta'||betType==='first4') ? document.getElementById('betHorse3').value : '';
-var horse4Name = betType==='first4' ? (document.getElementById('betHorse4')||{}).value||'' : '';
-if (!horse1Name || !horse2Name) { showError('Select at least 2 horses!'); return; }
-if ((betType==='trifecta'||betType==='boxed_trifecta') && !horse3Name) { showError('Select 3 horses for trifecta!'); return; }
-if (betType==='first4' && (!horse3Name||!horse4Name)) { showError('Select 4 horses for First 4!'); return; }
-var selectedHorses = [horse1Name, horse2Name];
-if (horse3Name) selectedHorses.push(horse3Name);
-if (horse4Name) selectedHorses.push(horse4Name);
-var uniqueHorses = selectedHorses.filter(function(h,i){ return h && selectedHorses.indexOf(h)===i; });
-if (uniqueHorses.length !== selectedHorses.length) { showError('Cannot select the same horse multiple times!'); return; }
-var typeLabels = {quinella:'Quinella',exacta:'Exacta',trifecta:'Trifecta',boxed_trifecta:'Boxed Trifecta',first4:'First 4'};
-var bet = {
-id: generateId(), horse: selectedHorses.join(' / '), horses: selectedHorses,
-horseNum: '', odds: 0, type: betType, stake: stake,
-race: (app.raceInfo.track || '') + ' ' + (app.raceInfo.race || ''), prob: 0
-};
-app.activeBets.push(bet);
-renderActiveBets();
-showSuccess((typeLabels[betType]||betType) + ' $' + stake.toFixed(2) + ' on ' + selectedHorses.join(', '));
-['betHorse1','betHorse2','betHorse3','betHorse4'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
-return;
-}
 var horseName = document.getElementById('betHorse').value;
 if (!horseName) { showError('Pick a horse!'); return; }
 var horse = null;
@@ -9189,7 +9117,8 @@ prob: horse.prob || 0
 };
 app.activeBets.push(bet);
 renderActiveBets();
-showSuccess(betType.charAt(0).toUpperCase() + betType.slice(1) + ' $' + stake.toFixed(2) + ' on ' + horseName);
+var typeLabels = { win: 'Win', place: 'Place', eachway: 'Each Way' };
+showSuccess((typeLabels[betType] || betType) + ' $' + stake.toFixed(2) + ' on ' + horseName);
 document.getElementById('betHorse').value = '';
 };
 app.updateBetDiv = function(betId, divValue) {
@@ -9218,14 +9147,12 @@ var b = app.activeBets[i];
 totalStake += b.type === 'eachway' ? b.stake * 2 : b.stake;
 var div = document.createElement('div');
 div.className = 'bet-entry';
-var isMultiLeg = ['quinella','exacta','trifecta','boxed_trifecta','first4'].indexOf(b.type) !== -1;
-var typeLabelsMap = {'win':'Win','place':'Place','eachway':'E/W','each-way':'E/W','exacta':'Exacta','quinella':'Quinella','trifecta':'Trifecta','boxed_trifecta':'Box Trifecta','first4':'First 4'}; var typeLabel = typeLabelsMap[b.type] || b.type.charAt(0).toUpperCase() + b.type.slice(1); if (b.fromConsensus) typeLabel = '[C] ' + typeLabel;
+var typeLabelsMap = { win: 'Win', place: 'Place', eachway: 'E/W', 'each-way': 'E/W' };
+var typeLabel = typeLabelsMap[b.type] || b.type.charAt(0).toUpperCase() + b.type.slice(1);
+if (b.fromConsensus) typeLabel = '[C] ' + typeLabel;
 var potentialWin = b.odds > 0 ? '$' + (b.stake * b.odds).toFixed(2) : '?';
-var divInputHtml = isMultiLeg
-  ? ' <input type="number" placeholder="Div $?" min="1" step="0.5" value="' + (b.actualDiv || '') + '" style="width:80px; padding:3px 6px; background:var(--bg-input); border:1px solid var(--border); border-radius:4px; color:var(--text-primary); font-size:11px;" oninput="app.updateBetDiv(\'' + b.id + '\', this.value)" title="Enter actual TAB dividend">'
-  : '';
-div.innerHTML = '<span class="bet-info"><strong>' + escapeHtml(b.horse) + '</strong> ' + typeLabel + ' $' + b.stake.toFixed(2) + (b.odds > 0 ? ' @ $' + b.odds.toFixed(2) + ' -> ' + potentialWin : '') + divInputHtml + '</span>' +
-'<button class="bet-remove" data-id="' + b.id + '">✕</button>';
+div.innerHTML = '<span class="bet-info"><strong>' + escapeHtml(b.horse) + '</strong> ' + typeLabel + ' $' + b.stake.toFixed(2) + (b.odds > 0 ? ' @ $' + b.odds.toFixed(2) + ' \u2192 ' + potentialWin : '') + '</span>' +
+'<button class="bet-remove" data-id="' + b.id + '">\u2715</button>';
 div.querySelector('.bet-remove').onclick = (function(id) { return function() { app.removeBet(id); }; })(b.id);
 container.appendChild(div);
 }
@@ -9291,68 +9218,8 @@ result.winReturn = isWin ? b.stake * b.odds : 0;
 result.placeReturn = isPlace ? b.stake * placeOdds : 0;
 result.profit = returns - totalStake;
 if (!isWin && !isPlace) result.outcome = 'loss';
-} else if (b.type === 'quinella') {
-var predictedTop2 = b.horses || [];
-var actualTop2 = [name1, name2].filter(function(n) { return n; });
-var hits = 0;
-for (var q = 0; q < predictedTop2.length; q++) {
-if (actualTop2.indexOf(predictedTop2[q]) !== -1) hits++;
-}
-if (hits === 2) {
-// Quinella: dividend per $1. If user entered actual div, use it.
-var quinellaDividend = b.actualDiv || 15;
-result.winReturn = b.stake * quinellaDividend;
-result.estimatedDiv = quinellaDividend;
-result.profit = result.winReturn - b.stake;
-result.outcome = 'win';
 } else {
 result.profit = -b.stake;
-}
-} else if (b.type === 'exacta') {
-var ePredicted = b.horses || [];
-if (ePredicted[0] === name1 && ePredicted[1] === name2) {
-var exactaDividend = 25;
-result.winReturn = b.stake * exactaDividend;
-result.profit = result.winReturn - b.stake;
-result.outcome = 'win';
-} else { result.profit = -b.stake; }
-} else if (b.type === 'trifecta') {
-// Exact order required
-var tPredicted = b.horses || [];
-if (tPredicted[0]===name1 && tPredicted[1]===name2 && tPredicted[2]===name3) {
-// Exact trifecta: per $1 unit, dividend ≈ $100-$500
-// Return = stake × dividend (correct for $1 unit stake)
-var trifectaDividend = 150; // slightly higher than box since exact order
-result.winReturn = b.stake * trifectaDividend;
-result.profit = result.winReturn - b.stake;
-result.outcome = 'win';
-} else { result.profit = -b.stake; }
-} else if (b.type === 'boxed_trifecta') {
-var btPredicted = b.horses || [];
-var btActual = [name1, name2, name3].filter(function(n){ return n; });
-var btHits = 0;
-for (var bt = 0; bt < btPredicted.length; bt++) { if (btActual.indexOf(btPredicted[bt]) !== -1) btHits++; }
-if (btHits === 3) {
-// $6 box trifecta: dividend is per $1 unit
-// If user entered actual div, use it. Otherwise estimate $100.
-var btEstDiv = b.actualDiv || 100;
-result.winReturn = (b.stake / 6) * btEstDiv;
-result.estimatedDiv = btEstDiv;
-result.actualDiv = b.actualDiv || 0;
-result.profit = result.winReturn - b.stake;
-result.outcome = 'win';
-} else { result.profit = -b.stake; }
-} else if (b.type === 'first4') {
-// Any order first 4 — needs 4 actual finishers; approximate with 3 we have
-var f4Predicted = b.horses || [];
-var f4Actual = [name1, name2, name3].filter(function(n){ return n; });
-var f4Hits = 0;
-for (var f4 = 0; f4 < f4Predicted.length; f4++) { if (f4Actual.indexOf(f4Predicted[f4]) !== -1) f4Hits++; }
-if (f4Hits >= 3) {
-result.winReturn = b.stake * 150;
-result.profit = result.winReturn - b.stake;
-result.outcome = 'win';
-} else { result.profit = -b.stake; }
 }
 results.push(result);
 app.bettingHistory.push(result);
@@ -9366,10 +9233,11 @@ var betSummaries = [];
 for (var j = 0; j < results.length; j++) {
 var r = results[j];
 totalProfit += r.profit;
-var typeLabelsH = {'win':'Win','place':'Place','eachway':'E/W','each-way':'E/W','exacta':'Exacta','quinella':'Quinella','trifecta':'Trifecta','boxed_trifecta':'Box Tri','first4':'First 4'}; var typeLabel = typeLabelsH[r.type] || r.type.charAt(0).toUpperCase() + r.type.slice(1);
-if (r.outcome === 'win') betSummaries.push('✅ ' + r.horse + ' ' + typeLabel + ' +$' + r.profit.toFixed(2));
-else if (r.outcome === 'place') betSummaries.push('[yellow] ' + r.horse + ' ' + typeLabel + ' ' + (r.profit >= 0 ? '+' : '') + '$' + r.profit.toFixed(2));
-else betSummaries.push('❌ ' + r.horse + ' ' + typeLabel + ' -$' + Math.abs(r.profit).toFixed(2));
+var typeLabelsH = { win: 'Win', place: 'Place', eachway: 'E/W', 'each-way': 'E/W' };
+var typeLabel = typeLabelsH[r.type] || r.type.charAt(0).toUpperCase() + r.type.slice(1);
+if (r.outcome === 'win') betSummaries.push('\u2705 ' + r.horse + ' ' + typeLabel + ' +$' + r.profit.toFixed(2));
+else if (r.outcome === 'place') betSummaries.push('\u26a0\ufe0f ' + r.horse + ' ' + typeLabel + ' ' + (r.profit >= 0 ? '+' : '') + '$' + r.profit.toFixed(2));
+else betSummaries.push('\u274c ' + r.horse + ' ' + typeLabel + ' -$' + Math.abs(r.profit).toFixed(2));
 }
 return { results: results, totalProfit: totalProfit, summaries: betSummaries };
 }
@@ -9520,61 +9388,13 @@ h.confidencePct = Math.max(15, Math.min(99, Math.round(baseConf - fieldPenalty -
 
   if (!top1) return null;
 
-  // ─── Generate the 4 fixed bet types ───────────────────────────────────
+  // ─── Generate simple bet recommendations (Win / Place / Each-Way only) ──
   var bets = [];
-  var allAgree = function(list) {
-    return list.every(function(h){ return h.top3Votes >= Math.ceil(modelCount * 0.5); });
-  };
-  var orderConsistent = function(list) {
-    return list.every(function(h, i){ return h.avgRank <= i + 1.8; });
-  };
 
-    // ── PRIMARY BET: Boxed Trifecta — the main objective ──────────────────────
+  // ── PRIMARY BET: Win or Each-Way on top horse ────────────────────────────
   var _bankroll = parseFloat(document.getElementById('betStake') && document.getElementById('betStake').value || '0') || 500;
-  if (top3) {
-    var trifConf = Math.round((top1.confidencePct + top2.confidencePct + top3.confidencePct) / 3);
-    trifConf = Math.max(10, Math.min(88, trifConf));
-    var tripleBoost = top1.tripleConvergence ? 12 : 0;
-    var allAgreeBoost3 = allAgree([top1, top2, top3]) ? 8 : 0;
-    trifConf = Math.min(88, trifConf + tripleBoost + allAgreeBoost3);
-    var trifStakeUnit = trifConf >= 60 ? 2 : trifConf >= 45 ? 1 : 0.5;
-    var trifType = (orderConsistent([top1, top2, top3]) && allAgree([top1, top2, top3]) && trifConf >= 70) ? 'trifecta' : 'boxed_trifecta';
-    var trifReason = allAgree([top1, top2, top3]) ? 'All 3 consensus picks — strong frame' : 'Best 3-horse combination — any order';
-    if (top1.tripleConvergence) trifReason = '🔥 TRIPLE CONVERGENCE · ' + trifReason;
-    trifReason += trifType === 'trifecta' ? ' · Order consistent — exact trifecta' : ' · $6 box trifecta · need 1 in 8 to profit';
-    bets.push({
-      rank: 1, type: trifType,
-      label: trifType === 'trifecta' ? '🎰 Trifecta (exact)' : '🎰 Boxed Trifecta',
-      horses: [top1.name, top2.name, top3.name], odds: 0,
-      confidence: trifConf, reason: trifReason,
-      stakeNote: trifType === 'boxed_trifecta' ? '$6 box (100% div) · avg pays $50-$200 · break-even = 1 in 8 races' : 'Exact order · Full trifecta dividend',
-      color: trifConf >= 55 ? '#a855f7' : trifConf >= 38 ? '#f59e0b' : '#ef4444', isPrimary: true
-    });
-  }
-
-  // ── SECONDARY BET: Quinella — stacks with trifecta ──────────────────────────
-  if (top2) {
-    var quConf = Math.round(top1.confidencePct * 0.55 + top2.confidencePct * 0.40);
-    var quBoost = allAgree([top1, top2]) ? 8 : 0;
-    if (top1.tripleConvergence) quBoost += 8;
-    quConf = Math.min(88, quConf + quBoost);
-    var quType = (orderConsistent([top1, top2]) && quConf >= 65) ? 'exacta' : 'quinella';
-    var quReason = allAgree([top1, top2]) ? 'Both horses backed by all models — quinella nearly certain' : 'Strongest 2-horse combination';
-    if (top1.tripleConvergence) quReason = '🔥 TRIPLE CONVERGENCE · ' + quReason;
-    quReason += ' · Stacks with trifecta for double payout on same race';
-    bets.push({
-      rank: 2, type: quType,
-      label: quType === 'exacta' ? '🎯 Exacta (in order)' : '🎯 Quinella (any order)',
-      horses: [top1.name, top2.name], odds: 0,
-      confidence: quConf, reason: quReason,
-      stakeNote: quType === 'exacta' ? 'Exacta — higher dividend than quinella' : (quConf >= 55 ? '$5 quinella · stacks with trifecta for double payout' : '$3 quinella · top 2 easier than top 3 · avg pays $8-$20'),
-      color: quConf >= 60 ? '#3b82f6' : quConf >= 40 ? '#f59e0b' : '#ef4444'
-    });
-  }
-
-  // ── WIN/EACH-WAY — bonus when standout pick ──────────────────────────────────
   var winConf = top1.confidencePct;
-  if (top1.top3Votes >= modelCount) winConf = Math.min(99, winConf + 12);
+  if (top1.top3Votes >= Math.ceil(modelCount * 0.75)) winConf = Math.min(92, winConf + 10);
   var bet1Type = (top1.odds > 0 && top1.odds > 5.0) ? 'each-way' : 'win';
   var bet1Reason = top1.top3Votes >= modelCount ? 'All ' + modelCount + ' models backed this — standout pick' : top1.top3Votes + '/' + modelCount + ' models on top';
   if (top1.tripleConvergence) bet1Reason = '🔥 TRIPLE CONVERGENCE · ' + bet1Reason;
@@ -9582,25 +9402,39 @@ h.confidencePct = Math.max(15, Math.min(99, Math.round(baseConf - fieldPenalty -
   var _kelly1 = getKellyLabel(winConf, top1.odds, _bankroll);
   var _kellyNote = _kelly1 && _kelly1.stake > 0 ? ' · Kelly: $' + _kelly1.stake.toFixed(2) : '';
   bets.push({
-    rank: 3, type: bet1Type,
-    label: bet1Type === 'each-way' ? '🏇 Each-Way (bonus)' : '🏇 Win (bonus)',
+    rank: 1, type: bet1Type,
+    label: bet1Type === 'each-way' ? '🏇 Each-Way' : '🏇 Win',
     horses: [top1.name], odds: top1.odds, confidence: winConf, reason: bet1Reason,
     stakeNote: (bet1Type === 'each-way' ? 'Win + place · 2 bets' : 'Win only') + _kellyNote,
-    kellyStake: _kelly1 ? _kelly1.stake : 0,
     color: winConf >= 65 ? '#10b981' : winConf >= 45 ? '#f59e0b' : '#ef4444'
   });
 
-  // ── FIRST 4 — if high confidence across 4 horses ────────────────────────────
-  if (top4) {
-    var f4Conf = Math.round((top1.confidencePct + top2.confidencePct + top3.confidencePct + top4.confidencePct) / 4) - 10;
-    f4Conf = Math.max(8, Math.min(75, f4Conf));
-    if (allAgree([top1, top2, top3, top4])) f4Conf = Math.min(75, f4Conf + 8);
+  // ── SECONDARY BET: Place on runner-up ──────────────────────────────────────
+  if (top2) {
+    var plConf = Math.round(top2.confidencePct * 0.85);
+    plConf = Math.min(85, plConf + (top2.top3Votes >= Math.ceil(modelCount * 0.5) ? 8 : 0));
     bets.push({
-      rank: 4, type: 'first4', label: '🃏 First 4 (boxed)',
-      horses: [top1.name, top2.name, top3.name, top4.name], odds: 0,
-      confidence: f4Conf, reason: 'All 4 any order · Biggest payout · $1 unit = $24',
-      stakeNote: '$0.50 unit × 24 combos = $12 · Pays $100-$2000+',
-      color: f4Conf >= 40 ? '#06b6d4' : f4Conf >= 25 ? '#f59e0b' : '#ef4444'
+      rank: 2, type: 'place',
+      label: '🎯 Place',
+      horses: [top2.name], odds: top2.odds || 0, confidence: plConf,
+      reason: top2.top3Votes + '/' + modelCount + ' models have this in frame',
+      stakeNote: 'Place bet — pays if finishes 1st, 2nd or 3rd',
+      color: plConf >= 60 ? '#3b82f6' : plConf >= 40 ? '#f59e0b' : '#ef4444'
+    });
+  }
+
+  // ── VALUE BET: Each-Way on third horse ────────────────────────────────────
+  if (top3) {
+    var vc = Math.round(top3.confidencePct * 0.75);
+    vc = Math.min(80, vc);
+    var isEW3 = (top3.odds || 0) > 4.0;
+    bets.push({
+      rank: 3, type: isEW3 ? 'each-way' : 'win',
+      label: isEW3 ? '🎰 Each-Way (value)' : '🏇 Win (value)',
+      horses: [top3.name], odds: top3.odds || 0, confidence: vc,
+      reason: top3.top3Votes + '/' + modelCount + ' models have this in top 3 — value play',
+      stakeNote: isEW3 ? 'Value each-way — place pays at good odds' : 'Value win — longer price',
+      color: vc >= 50 ? '#a855f7' : vc >= 35 ? '#f59e0b' : '#ef4444'
     });
   }
 
@@ -9718,10 +9552,8 @@ function renderConsensusAdvisor() {
 
   // ── RACE CONFIDENCE GATE ─────────────────────────────────────────────────
   // Evaluate whether this race is worth betting on.
-  // Targeting ~80% hit rate on selected races by only betting green gates.
-  var trifBet = consensus.bets && consensus.bets.filter(function(b){ return b.type === 'boxed_trifecta' || b.type === 'trifecta'; })[0];
-  var quBet   = consensus.bets && consensus.bets.filter(function(b){ return b.type === 'quinella' || b.type === 'exacta'; })[0];
-  var trifConf = trifBet ? trifBet.confidence : 0;
+  var winBet  = consensus.bets && consensus.bets.filter(function(b){ return b.type === 'win' || b.type === 'each-way'; })[0];
+  var winConf2 = winBet ? winBet.confidence : 0;
 
   // Signal 1: Triple convergence (all 3 specialists agree on top 3)
   var sigTriple = !!(consensus.top1 && consensus.top1.tripleConvergence);
@@ -9731,8 +9563,8 @@ function renderConsensusAdvisor() {
     consensus.top2.top3Votes >= Math.ceil(consensus.modelCount * 0.75));
   // Signal 3: Pattern library match on top horse
   var sigPattern = !!(consensus.top1 && consensus.top1.patternMatches > 0);
-  // Signal 4: High trifecta confidence
-  var sigConf = trifConf >= 58;
+  // Signal 4: High win confidence
+  var sigConf = winConf2 >= 58;
   // Signal 5: Short odds top 2 (market agrees with model)
   var sigMarket = !!(consensus.top1 && consensus.top2 &&
     consensus.top1.odds > 0 && consensus.top1.odds <= 5.0 &&
@@ -9742,18 +9574,18 @@ function renderConsensusAdvisor() {
 
   // Gate decision
   var gateLevel, gateColor, gateIcon, gateAction, gateDetail;
-  if (signalsFiring >= 3 || (sigTriple && signalsFiring >= 2) || trifConf >= 70) {
+  if (signalsFiring >= 3 || (sigTriple && signalsFiring >= 2) || winConf2 >= 70) {
     gateLevel  = 'BET';
     gateColor  = '#10b981';
     gateIcon   = '🟢';
-    gateAction = 'Bet BOTH — Trifecta Box ($6) + Quinella ($5) = $11 · confident race';
+    gateAction = 'Bet Win/Each-Way on top horse · Place on runner-up · confident race';
     gateDetail = 'High confidence race · ' + signalsFiring + '/5 signals firing · ~80% hit rate on these races';
-  } else if (signalsFiring >= 2 || trifConf >= 48) {
+  } else if (signalsFiring >= 2 || winConf2 >= 48) {
     gateLevel  = 'CAUTION';
     gateColor  = '#f59e0b';
     gateIcon   = '🟡';
-    gateAction = '$3 Quinella only · Skip trifecta · Top 2 easier than top 3';
-    gateDetail = 'Moderate confidence · ' + signalsFiring + '/5 signals · Quinella still profitable at 65% hit rate';
+    gateAction = 'Place bet on top 2 only · Skip win · Top 2 easier to hit';
+    gateDetail = 'Moderate confidence · ' + signalsFiring + '/5 signals · Place still profitable at 65% hit rate';
   } else {
     gateLevel  = 'PASS';
     gateColor  = '#ef4444';
@@ -9767,7 +9599,7 @@ function renderConsensusAdvisor() {
     { firing: sigTriple,   label: '🔥 Triple convergence' },
     { firing: sigAllAgree, label: '🤝 Full model agreement' },
     { firing: sigPattern,  label: '🧩 Pattern match' },
-    { firing: sigConf,     label: '📊 High confidence (' + trifConf + '%)' },
+    { firing: sigConf,     label: '📊 High confidence (' + winConf2 + '%)' },
     { firing: sigMarket,   label: '💰 Market agrees' }
   ];
 
@@ -9797,9 +9629,9 @@ function renderConsensusAdvisor() {
   html += '<div style="font-size:12px; font-weight:700; color:' + gateColor + '; padding:6px 8px; background:' + gateColor + '15; border-radius:6px;">';
   html += gateAction;
   if (gateLevel === 'BET') {
-    html += ' <span style="color:#94a3b8; font-weight:400; font-size:10px;">· break-even = 1 in 8</span>';
+    html += ' <span style="color:#94a3b8; font-weight:400; font-size:10px;">· high confidence · bet responsibly</span>';
   } else if (gateLevel === 'CAUTION') {
-    html += ' <span style="color:#94a3b8; font-weight:400; font-size:10px;">· 65% hit rate = +$24 profit on 5 races</span>';
+    html += ' <span style="color:#94a3b8; font-weight:400; font-size:10px;">· 65% hit rate = profitable at these odds</span>';
   }
   html += '</div>';
   html += '</div>';
@@ -9856,12 +9688,16 @@ function renderConsensusAdvisor() {
 }
 
 app.quickAddBet = function(betType, horses) {
-  var stakeDefaults = { boxed_trifecta: 6, quinella: 5, exacta: 5, trifecta: 1, win: 10, 'each-way': 10 };
-  var stakeEl = document.getElementById('betStake'); var stake = stakeEl ? parseFloat(stakeEl.value)||stakeDefaults[betType]||10 : stakeDefaults[betType]||10;
+  // Only support simple bet types
+  var allowedTypes = ['win', 'place', 'eachway', 'each-way'];
+  if (allowedTypes.indexOf(betType) === -1) betType = 'win';
+  var stakeEl = document.getElementById('betStake');
+  var stake = stakeEl ? parseFloat(stakeEl.value) || 10 : 10;
+  var horseName = horses && horses[0] ? horses[0] : '';
+  if (!horseName) { showError('No horse specified.'); return; }
   var bet = {
     id: generateId(),
-    horse: horses.join(' / '),
-    horses: horses,
+    horse: horseName,
     horseNum: '',
     odds: 0,
     type: betType,
@@ -9870,16 +9706,13 @@ app.quickAddBet = function(betType, horses) {
     prob: 0,
     fromConsensus: true
   };
-  // Try to fill in odds for win/each-way
-  if ((betType === 'win' || betType === 'each-way') && horses[0]) {
-    for (var i = 0; i < app.horses.length; i++) {
-      if (app.horses[i].name === horses[0]) { bet.odds = app.horses[i].odds || 0; break; }
-    }
+  for (var i = 0; i < app.horses.length; i++) {
+    if (app.horses[i].name === horseName) { bet.odds = app.horses[i].odds || 0; break; }
   }
   app.activeBets.push(bet);
   renderActiveBets();
-  var typeLabels = {win:'Win', 'each-way':'Each-Way', exacta:'Exacta', quinella:'Quinella', trifecta:'Trifecta', boxed_trifecta:'Boxed Trifecta', first4:'First 4'};
-  showSuccess('[odds] ' + (typeLabels[betType]||betType) + ' added: ' + horses.join(', '));
+  var typeLabels = { win: 'Win', place: 'Place', eachway: 'Each Way', 'each-way': 'Each Way' };
+  showSuccess('\u{1F3C7} ' + (typeLabels[betType] || betType) + ' added: ' + horseName);
 };
 
 // Clear consensus: removes all pending predictions for the CURRENT race key
@@ -9954,7 +9787,7 @@ var recent = app.bettingHistory.slice(-20).reverse();
 for (var j = 0; j < recent.length; j++) {
 var r = recent[j];
 var div = document.createElement('div');
-var typeLabel = r.type === 'eachway' ? 'E/W' : r.type.charAt(0).toUpperCase() + r.type.slice(1);
+var typeLabel = { win: 'Win', place: 'Place', eachway: 'E/W', 'each-way': 'E/W' }[r.type] || r.type.charAt(0).toUpperCase() + r.type.slice(1);
 if (r.outcome === 'loss') {
 div.className = 'bet-result loss';
 div.innerHTML = '❌ <strong>' + escapeHtml(r.horse) + '</strong> ' + typeLabel + ' $' + r.stake.toFixed(2) + (r.odds ? ' @ $' + r.odds.toFixed(2) : '') + ' -- <strong>-$' + Math.abs(r.profit).toFixed(2) + '</strong>' + '<span style="float:right; font-size:11px; opacity:0.7;">' + escapeHtml(r.race) + ' ' + (r.date || '') + '</span>';
